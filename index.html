@@ -426,7 +426,6 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div class="tab" onclick="switchTab(&#39;sx&#39;)">🏭 Sản Lượng SX</div>
   <div class="tab" onclick="switchTab(&#39;xh&#39;)">🚚 Xuất Hàng TP</div>
   <div class="tab" onclick="switchTab(&#39;kh&#39;)">📋 Kế Hoạch SX</div>
-  <div class="tab" onclick="switchTab(&#39;bd&#39;)">📈 Biểu đồ</div>
   <div class="tab" onclick="switchTab(&#39;rq&#39;)">📋 Phiếu Request</div>
   <div class="tab" onclick="switchTab(&#39;ls&#39;)">🕐 Lịch Sử</div>
   <div class="tab active" onclick="switchTab(&#39;dm&#39;)">☰ Danh Mục</div>
@@ -451,10 +450,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <div class="card"><div class="card-label">Sản lượng SX hôm nay</div><div class="card-val cg" id="s-tp-sx">0</div></div>
     <div class="card"><div class="card-label">Xuất TP hôm nay</div><div class="card-val ca" id="s-tp-xh">0</div></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-    <div class="chart-wrap"><div class="chart-title">Tồn kho theo loại</div><canvas id="c-tq" height="16465" style="box-sizing: border-box; display: block; height: 13172px; width: 718px;" width="897"></canvas></div>
     <div class="chart-wrap"><div class="chart-title">Mặt hàng cần chú ý</div><div id="low-list" style="max-height:200px;overflow-y:auto"><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281801-001</div><div style="font-size:12px;font-weight:600">SÀN XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281801-002</div><div style="font-size:12px;font-weight:600">NẮP GIỮ BĂNG MẠCH LOA XE C…</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281801-003</div><div style="font-size:12px;font-weight:600">NẮP CÀI LỌA XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-001</div><div style="font-size:12px;font-weight:600">LINH KIỆN ĐÈN XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-002</div><div style="font-size:12px;font-weight:600">THÙNG NƯỚC CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-003</div><div style="font-size:12px;font-weight:600">LINH KIỆN ĐẦU XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-004</div><div style="font-size:12px;font-weight:600">LINH KIỆN THÂN XE (CỠ RỘNG)</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-005</div><div style="font-size:12px;font-weight:600">BẢNG ĐIỀU KHIỂN BÊN PHẢI</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-006</div><div style="font-size:12px;font-weight:600">LINH KIỆN ĐUÔI XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281803-001</div><div style="font-size:12px;font-weight:600">2 QUAI THOÁT KẺ TRÊN SÀN XE</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281803-002</div><div style="font-size:12px;font-weight:600">BẮC THANG XE CỨU HỎA BÊN P…</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281803-003</div><div style="font-size:12px;font-weight:600">BẮC THANG XE CỨU HỎA BÊN T…</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-004</div><div style="font-size:12px;font-weight:600">BIÊN TRÁI CỬA BÌNH CHỨA CHÁY</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-005</div><div style="font-size:12px;font-weight:600">CỬA BÊN PHẢI BÌNH CHỨA CHÁY</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-006</div><div style="font-size:12px;font-weight:600">GIÁ ĐỠ CẦN THANG CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-007</div><div style="font-size:12px;font-weight:600">CỬA SỐ XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-008</div><div style="font-size:12px;font-weight:600">TĂNG NƯỚC TƠ CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">Z01-02S21004-001</div><div style="font-size:12px;font-weight:600">THÂN XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21005-001</div><div style="font-size:12px;font-weight:600">THANG ĐẦU XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21005-002</div><div style="font-size:12px;font-weight:600">THANG NGẮN XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21006-001</div><div style="font-size:12px;font-weight:600">ĐÀI CAO XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-001</div><div style="font-size:12px;font-weight:600">GIÁ ĐỠ CẦU THANG CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-002</div><div style="font-size:12px;font-weight:600">CẤY THANG TRÁI</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-003</div><div style="font-size:12px;font-weight:600">CẤY THANG PHẢI</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-004</div><div style="font-size:12px;font-weight:600">LINH KIỆN LỖ GIÁ CẦU THANG</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-005</div><div style="font-size:12px;font-weight:600">LINH KIỆN DINH GIÁ CẦU THANG</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B01-02S21009-001</div><div style="font-size:12px;font-weight:600">ĐẦU XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21009-002</div><div style="font-size:12px;font-weight:600">DÀN Ở ĐẦU XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21019-002</div><div style="font-size:12px;font-weight:600">CÔNG TẮC XE CỨU HỎA / MÁY …</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21023-001</div><div style="font-size:12px;font-weight:600">BÁNH XE</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21023-002</div><div style="font-size:12px;font-weight:600">LỐP XE</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B42-82S19000-002</div><div style="font-size:12px;font-weight:600">PCBA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C01-02S00000-033</div><div style="font-size:12px;font-weight:600">ỐC VÍT (loại 033)</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C01-02S00000-040</div><div style="font-size:12px;font-weight:600">ỐC VÍT (loại 040)</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C01-02S00000-039</div><div style="font-size:12px;font-weight:600">ỐC VÍT (loại 039)</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C02-20005020-001</div><div style="font-size:12px;font-weight:600">ĐAI ỐC</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C16-00020052321</div><div style="font-size:12px;font-weight:600">TRỤC CHỐT NGƯỢC</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C93-51173116-312</div><div style="font-size:12px;font-weight:600">TẤM PHẨM CƠ VÌM</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C43-50173116-311</div><div style="font-size:12px;font-weight:600">TẤM PHẨM CỰC DƯƠNG</div></div><span class="sb sb-red">0 / 100</span></div></div></div>
-  </div>
 </div>
 
 <!-- GIAO DỊCH HÀNG NGÀY -->
@@ -595,15 +591,6 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   </div>
 </div>
 
-<!-- BIỂU ĐỒ -->
-<div class="pg" id="pg-bd">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-    <div class="chart-wrap"><div class="chart-title">Tồn theo loại linh kiện</div><canvas id="c-loai" height="200"></canvas></div>
-    <div class="chart-wrap"><div class="chart-title">Phân bố trạng thái</div><canvas id="c-st" height="200"></canvas></div>
-  </div>
-  <div class="chart-wrap"><div class="chart-title">Top 10 mặt hàng tồn thấp nhất</div><canvas id="c-low" height="300"></canvas></div>
-  <div class="chart-wrap"><div class="chart-title">Nhập / Xuất 7 ngày gần nhất</div><canvas id="c-trend" height="200"></canvas></div>
-</div>
 
 <!-- PHIẾU REQUEST -->
 <div class="pg" id="pg-rq">
@@ -809,7 +796,6 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
 <!-- TOAST -->
 <div id="toast" style="position: fixed; bottom: 20px; right: 20px; background: rgb(30, 132, 73); color: rgb(255, 255, 255); padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: none; z-index: 2000; box-shadow: rgba(0, 0, 0, 0.3) 0px 4px 20px;">☁️ Dữ liệu vừa được cập nhật từ máy khác</div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 const DFLT=[
   {ma:"B02-02S21001-001",ten:"SÀN XE CỨU HỎA",loai:"Thân xe",dvt:"bộ",ton:0,min:2},
@@ -864,7 +850,7 @@ const DFLT_PRODUCTS=[
 ];
 
 const SK='ht2v8_';
-let charts={},rqCtr=1,importBuf=[],editMa=null,gdType='nhap',editPMa=null,editBomRows=[],gdRows=[];
+let rqCtr=1,importBuf=[],editMa=null,gdType='nhap',editPMa=null,editBomRows=[],gdRows=[];
 
 // Danh mục lỗi mặc định (theo bảng thống kê lỗi thực tế của xưởng)
 const DFLT_DEFECT_CATS=['Đèn không sáng','Hỏng loa','Thiếu cực pin','Ngược cực','Lắp kênh','Liệt phím','Lỗi kính xe','Lỗi vỏ thân xe','Xước kính xe','Bong bạc','Lỗi khác'];
@@ -1037,8 +1023,6 @@ function applyCloudState(state){
   // Vẽ lại toàn bộ giao diện đang có để phản ánh dữ liệu mới nhất
   updateSummary();
   renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();
-  const tabActive=document.getElementById('pg-tq');
-  if(tabActive&&tabActive.classList.contains('active'))renderTqChart();
   // Chỉ hiện thông báo tối đa 1 lần mỗi 4 giây — tránh dồn dập thông báo/nháy màn hình
   // khi nhiều máy trong xưởng cùng lưu dữ liệu liên tiếp trong thời gian ngắn
   const nowTs=Date.now();
@@ -1197,10 +1181,9 @@ function switchTab(id){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('pg-'+id).classList.add('active');
-  const tabs=['tq','nx','tk','cp','bom','sx','xh','kh','bd','rq','ls','dm'];
+  const tabs=['tq','nx','tk','cp','bom','sx','xh','kh','rq','ls','dm'];
   document.querySelectorAll('.tab')[tabs.indexOf(id)].classList.add('active');
-  if(id==='bd')setTimeout(renderCharts,60);
-  if(id==='tq'){updateSummary();setTimeout(renderTqChart,60);}
+  if(id==='tq')updateSummary();
   if(id==='ls')renderHis();
   if(id==='dm')renderDM();
   if(id==='tk')renderTonKho();
@@ -1441,26 +1424,6 @@ function updateSummary(){
     +'<div><div style="font-size:10px;color:#999">'+it.ma+'</div><div style="font-size:12px;font-weight:600">'+(it.ten.length>28?it.ten.slice(0,26)+'…':it.ten)+'</div></div>'
     +'<span class="sb '+(it._s==='low'?'sb-red':'sb-amber')+'">'+fN(getTon(it))+' / '+fN(it.min)+'</span>'
     +'</div>').join('');
-}
-
-// ── CHARTS ────────────────────────────────────────────────────────────────────
-function renderTqChart(){
-  const loais=[...new Set(items.map(i=>i.loai))],cols=['#c0392b','#185FA5','#1e8449','#b7770d','#5c3a7d'];
-  const ctx=document.getElementById('c-tq');if(!ctx)return;
-  if(charts.tq)charts.tq.destroy();
-  charts.tq=new Chart(ctx,{type:'doughnut',data:{labels:loais,datasets:[{data:loais.map(l=>items.filter(i=>i.loai===l).reduce((s,i)=>s+getTon(i),0)),backgroundColor:cols.slice(0,loais.length),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12,padding:8}}}}});
-}
-
-function renderCharts(){
-  const loais=[...new Set(items.map(i=>i.loai))],cols=['#c0392b','#185FA5','#1e8449','#b7770d','#5c3a7d'];
-  const c1=document.getElementById('c-loai');
-  if(c1){if(charts.bl)charts.bl.destroy();charts.bl=new Chart(c1,{type:'bar',data:{labels:loais,datasets:[{data:loais.map(l=>items.filter(i=>i.loai===l).reduce((s,i)=>s+getTon(i),0)),backgroundColor:cols,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11}}}}}});}
-  const c2=document.getElementById('c-st');
-  if(c2){if(charts.bs)charts.bs.destroy();charts.bs=new Chart(c2,{type:'pie',data:{labels:['Đủ hàng','Sắp hết','Thiếu'],datasets:[{data:[items.filter(i=>getSt(i)==='ok').length,items.filter(i=>getSt(i)==='warn').length,items.filter(i=>getSt(i)==='low').length],backgroundColor:['#1e8449','#b7770d','#c0392b'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:12,padding:8}}}}});}
-  const c3=document.getElementById('c-low');
-  if(c3){if(charts.blo)charts.blo.destroy();const srt=[...items].sort((a,b)=>(getTon(a)/Math.max(a.min,1))-(getTon(b)/Math.max(b.min,1))).slice(0,10);charts.blo=new Chart(c3,{type:'bar',data:{labels:srt.map(i=>i.ten.length>20?i.ten.slice(0,18)+'…':i.ten),datasets:[{label:'Tồn hiện tại',data:srt.map(i=>getTon(i)),backgroundColor:'#185FA5',borderWidth:0},{label:'Mức tối thiểu',data:srt.map(i=>i.min),backgroundColor:'rgba(183,119,13,.4)',borderWidth:1,borderColor:'#b7770d'}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{font:{size:11},boxWidth:12}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:10}}}}}});}
-  const c4=document.getElementById('c-trend');
-  if(c4){if(charts.bt)charts.bt.destroy();const days=[],na=[],xa=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=fISO(d);days.push(d.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'}));const dl=gdLog.filter(l=>l.date===ds);na.push(dl.filter(l=>l.type==='nhap').reduce((s,l)=>s+l.sl,0));xa.push(dl.filter(l=>l.type==='xuat').reduce((s,l)=>s+l.sl,0));}charts.bt=new Chart(c4,{type:'line',data:{labels:days,datasets:[{label:'Nhập',data:na,borderColor:'#1e8449',backgroundColor:'rgba(30,132,73,.15)',fill:true,tension:.3,borderWidth:2,pointRadius:5},{label:'Xuất',data:xa,borderColor:'#b7770d',backgroundColor:'rgba(183,119,13,.15)',fill:true,tension:.3,borderWidth:2,pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:12}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11}},min:0}}}});}
 }
 
 // ── DANH MỤC ─────────────────────────────────────────────────────────────────
@@ -2347,7 +2310,6 @@ function init(){
   updateSummary();
   renderDayGd();
   renderRq();
-  setTimeout(renderTqChart,100);
   updateAdminUI();
   tryAutoLogin();
   initCloudSync();
