@@ -13,6 +13,7 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#f4f6f8}
 .topbar h1{font-size:13px;font-weight:600;flex:1}
 .tbadge{background:rgba(255,255,255,.2);border-radius:4px;padding:2px 8px;font-size:11px;white-space:nowrap}
 .tbadge-warn{background:#7b1a1a;border-radius:4px;padding:2px 8px;font-size:11px;white-space:nowrap;display:none}
+@keyframes pulseUpdate{0%,100%{opacity:1}50%{opacity:.6}}
 /* TABS */
 .tabs{display:flex;background:#fff;border-bottom:1px solid #ddd;padding:0 12px;overflow-x:auto;position:sticky;top:39px;z-index:9}
 .tab{padding:9px 13px;cursor:pointer;font-size:12px;color:#666;border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0}
@@ -408,6 +409,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <span class="tbadge" id="hd-date">21/7/2026</span>
   <span class="tbadge-warn" id="hd-low" style="display: inline;">⚠ 39 mặt hàng thiếu</span>
   <span class="tb-btn" id="hd-cloud" title="Trạng thái đồng bộ dữ liệu đám mây" style="background: rgba(231, 76, 60, 0.35);">⚠️ Mất kết nối (chỉ lưu máy này)</span>
+  <span class="tb-btn" id="hd-update-btn" onclick="applyPendingCloudUpdate()" style="display:none;background:#2ecc71;animation:pulseUpdate 1.5s ease-in-out infinite" title="Có dữ liệu mới từ máy khác, bấm để cập nhật màn hình">🔄 Có dữ liệu mới — Bấm để cập nhật</span>
   <span class="tb-btn" onclick="exportBackup()" title="Lưu toàn bộ dữ liệu ra 1 file để chuyển sang máy khác">💾 Xuất dữ liệu</span>
   <span class="tb-btn" onclick="document.getElementById(&#39;backup-file-input&#39;).click()" title="Nạp file dữ liệu đã xuất từ máy khác">📥 Nhập dữ liệu</span>
   <input type="file" id="backup-file-input" accept="application/json,.json" style="display:none" onchange="importBackup(this.files[0])">
@@ -1083,12 +1085,19 @@ function handleCloudEvent(ev){
   }
   pendingPush=false; // ưu tiên dữ liệu thật từ cloud thay vì thay đổi cục bộ trước khi kịp đồng bộ
   lastAppliedTs=incomingTs;
-  // Gộp nhiều bản cập nhật liên tiếp (khi nhiều máy trong xưởng cùng lưu dồn dập)
-  // thành 1 lần vẽ lại duy nhất sau 400ms yên lặng, thay vì vẽ lại ngay mỗi lần —
-  // đây là nguyên nhân chính gây cảm giác "nháy" ở tab Tổng Quan khi nhiều người dùng cùng lúc.
+  // KHÔNG tự vẽ lại màn hình ngay — chỉ lưu dữ liệu chờ và hiện nút "Có dữ liệu mới".
+  // Người dùng chủ động bấm khi tiện, tránh bị nháy màn hình khi nhiều máy cùng lưu liên tục.
+  // Dữ liệu vẫn được lưu an toàn trên cloud dù chưa bấm cập nhật — không mất gì cả.
   pendingCloudData=data;
-  clearTimeout(applyStateTimer);
-  applyStateTimer=setTimeout(()=>{applyCloudState(pendingCloudData);pendingCloudData=null;},400);
+  const btn=document.getElementById('hd-update-btn');
+  if(btn)btn.style.display='inline-flex';
+}
+function applyPendingCloudUpdate(){
+  if(!pendingCloudData)return;
+  applyCloudState(pendingCloudData);
+  pendingCloudData=null;
+  const btn=document.getElementById('hd-update-btn');
+  if(btn)btn.style.display='none';
 }
 
 // ── SAO LƯU / KHÔI PHỤC DỮ LIỆU (chuyển dữ liệu sang máy khác) ───────────────
