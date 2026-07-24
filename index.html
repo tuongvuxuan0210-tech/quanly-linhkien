@@ -290,6 +290,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
       </div>
     </div>
     <div class="frow">
+      <div class="ff"><label>Công đoạn sản xuất</label><input id="fp-congdoan" placeholder="VD: Lắp ráp, Phun sơn, In..." list="congdoan-list"><datalist id="congdoan-list"></datalist><span class="hint">Gõ tên công đoạn mới nếu chưa có trong gợi ý</span></div>
       <div class="ff"><label>Giá bán (đ / đơn vị)</label><input id="fp-gia" type="number" min="0" step="1000" placeholder="VD: 15000000"><span class="hint">Dùng để tự tính doanh thu khi ghi nhận sản lượng SX</span></div>
     </div>
     <div class="info-box" style="margin-top:-6px">ℹ Xưởng sản xuất mặc định chỉ là gợi ý — mỗi lần ghi nhận sản lượng SX hoặc xuất hàng vẫn có thể chọn lại đúng xưởng thực tế (áp dụng khi 1 mã TP được làm ở cả 2 xưởng).</div>
@@ -695,7 +696,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div class="tbl-wrap">
     <table><thead><tr>
       <th style="width:34px">STT</th><th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th>
-      <th>ĐVT</th><th>Xưởng SX mặc định</th><th>Tồn Xưởng 1</th><th>Tồn Xưởng 2</th><th>Tổng tồn TP</th><th>Giá bán</th><th>Số dòng BOM</th><th>Trạng thái</th><th>Thao tác</th>
+      <th>ĐVT</th><th>Công đoạn</th><th>Xưởng SX mặc định</th><th>Tồn Xưởng 1</th><th>Tồn Xưởng 2</th><th>Tổng tồn TP</th><th>Giá bán</th><th>Số dòng BOM</th><th>Trạng thái</th><th>Thao tác</th>
     </tr></thead><tbody id="bom-list-body"></tbody></table>
   </div>
 </div>
@@ -747,6 +748,12 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <div class="card"><div class="card-label">Tổng SL sản xuất tháng</div><div class="card-val" id="dt-sl">0</div></div>
   </div>
   <div class="tbl-wrap">
+    <div class="chart-title" style="padding:10px 10px 0">Doanh thu theo Công đoạn</div>
+    <table><thead><tr>
+      <th style="width:40px">STT</th><th class="tl">Công đoạn</th><th>SL sản xuất</th><th>Doanh thu Xưởng 1</th><th>Doanh thu Xưởng 2</th><th>Tổng doanh thu</th>
+    </tr></thead><tbody id="dt-cd-body"><tr><td colspan="6" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr></tbody></table>
+  </div>
+  <div class="tbl-wrap" style="margin-top:12px">
     <div class="chart-title" style="padding:10px 10px 0">Doanh thu theo ngày</div>
     <table><thead><tr>
       <th style="width:40px">STT</th><th class="tl">Ngày</th><th>SL sản xuất</th><th>Doanh thu Xưởng 1</th><th>Doanh thu Xưởng 2</th><th>Tổng doanh thu ngày</th>
@@ -755,8 +762,8 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div class="tbl-wrap" style="margin-top:12px">
     <div class="chart-title" style="padding:10px 10px 0">Doanh thu theo thành phẩm (trong tháng)</div>
     <table><thead><tr>
-      <th style="width:40px">STT</th><th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th><th>SL sản xuất</th><th>Doanh thu Xưởng 1</th><th>Doanh thu Xưởng 2</th><th>Tổng doanh thu</th>
-    </tr></thead><tbody id="dt-sp-body"><tr><td colspan="7" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr></tbody></table>
+      <th style="width:40px">STT</th><th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th><th class="tl">Công đoạn</th><th>SL sản xuất</th><th>Doanh thu Xưởng 1</th><th>Doanh thu Xưởng 2</th><th>Tổng doanh thu</th>
+    </tr></thead><tbody id="dt-sp-body"><tr><td colspan="8" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr></tbody></table>
   </div>
 </div>
 
@@ -1656,6 +1663,7 @@ function renderSP(){
       +'<td><div class="ma-code">'+p.ma+'</div></td>'
       +'<td class="item-ten">'+p.ten+'</td>'
       +'<td class="tc">'+p.dvt+'</td>'
+      +'<td class="tc">'+(p.congdoan?'<span style="background:#f0e6f7;color:#5c3a7d;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+p.congdoan+'</span>':'<span style="color:#ccc">—</span>')+'</td>'
       +'<td class="tc"><span style="background:#eef2f6;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+(LOC_LABELS[p.xuong]||'Xưởng 1')+'</span></td>'
       +'<td class="tr">'+fN(getTonSP(p,'x1'))+'</td>'
       +'<td class="tr">'+fN(getTonSP(p,'x2'))+'</td>'
@@ -1667,7 +1675,7 @@ function renderSP(){
       +'<button onclick="openEditProductModal(\''+p.ma+'\')" style="background:none;border:none;cursor:pointer;color:#185FA5;font-size:15px;padding:2px 4px" title="Sửa">✏</button>'
       +'<button onclick="delProduct(\''+p.ma+'\')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:15px;padding:2px 4px" title="Xóa">🗑</button>'
       +'</td></tr>';
-  }).join('') : '<tr><td colspan="12" style="text-align:center;padding:24px;color:#999">Chưa có thành phẩm nào. Bấm "+ Thêm thành phẩm" để khai báo.</td></tr>';
+  }).join('') : '<tr><td colspan="13" style="text-align:center;padding:24px;color:#999">Chưa có thành phẩm nào. Bấm "+ Thêm thành phẩm" để khai báo.</td></tr>';
 }
 function bomComponentOptions(selMa){
   return '<option value="">-- Chọn linh kiện --</option>'+items.map(it=>'<option value="'+it.ma+'"'+(it.ma===selMa?' selected':'')+'>['+it.ma+'] '+it.ten+'</option>').join('');
@@ -1694,6 +1702,8 @@ function openAddProductModal(){if(!requireAdmin())return;
   document.getElementById('fp-dvt').value='xe';
   document.getElementById('fp-ton-x1').value='0';document.getElementById('fp-ton-x2').value='0';document.getElementById('fp-min').value='1';
   document.getElementById('fp-gia').value='';
+  document.getElementById('fp-congdoan').value='';
+  fillCongDoanOptions();
   document.getElementById('fp-xuong').value='x1';
   document.getElementById('fp-ma').removeAttribute('readonly');document.getElementById('fp-ma').style.background='';
   fillCopyBomOptions(null);
@@ -1714,6 +1724,8 @@ function openEditProductModal(ma){if(!requireAdmin())return;
   document.getElementById('fp-ton-x2').value=getTonSP(p,'x2');
   document.getElementById('fp-min').value=p.min||1;
   document.getElementById('fp-gia').value=p.gia||'';
+  document.getElementById('fp-congdoan').value=p.congdoan||'';
+  fillCongDoanOptions();
   document.getElementById('fp-xuong').value=p.xuong||'x1';
   document.getElementById('fp-note').value=p.note||'';
   fillCopyBomOptions(ma);
@@ -1725,6 +1737,12 @@ function fillCopyBomOptions(excludeMa){
   const opts=products.filter(p=>p.ma!==excludeMa&&(p.bom||[]).length>0);
   sel.innerHTML='<option value="">-- Chọn thành phẩm để sao chép BOM --</option>'
     +opts.map(p=>'<option value="'+p.ma+'">['+p.ma+'] '+p.ten+' ('+(p.bom||[]).length+' dòng, '+LOC_LABELS[p.xuong]+')</option>').join('');
+}
+function fillCongDoanOptions(){
+  const dflt=['Lắp ráp','Phun sơn','In'];
+  const used=[...new Set(products.map(p=>p.congdoan).filter(Boolean))];
+  const all=[...new Set([...dflt,...used])];
+  document.getElementById('congdoan-list').innerHTML=all.map(c=>'<option value="'+c+'"></option>').join('');
 }
 function copyBomFrom(){
   const srcMa=document.getElementById('fp-copy-from').value;
@@ -1751,16 +1769,17 @@ function saveProduct(){if(!requireAdmin())return;
   const tonX2=parseFloat(document.getElementById('fp-ton-x2').value)||0;
   const min=parseFloat(document.getElementById('fp-min').value)||0;
   const gia=parseFloat(document.getElementById('fp-gia').value)||0;
+  const congdoan=(document.getElementById('fp-congdoan').value||'').trim();
   const note=document.getElementById('fp-note').value||'';
   const xuong=document.getElementById('fp-xuong').value||'x1';
   const bom=editBomRows.filter(r=>r.ma&&r.sl>0);
   if(editPMa){
     const p=products.find(x=>x.ma===editPMa);
-    if(p){p.ten=ten;p.dvt=dvt;p.ton={x1:tonX1,x2:tonX2};p.min=min;p.gia=gia;p.note=note;p.bom=bom;p.xuong=xuong;}
+    if(p){p.ten=ten;p.dvt=dvt;p.ton={x1:tonX1,x2:tonX2};p.min=min;p.gia=gia;p.congdoan=congdoan;p.note=note;p.bom=bom;p.xuong=xuong;}
     toast('Đã cập nhật thành phẩm: '+ten);
   } else {
     if(products.find(p=>p.ma===ma)){toast('Mã "'+ma+'" đã tồn tại!',true);return;}
-    products.push({ma,ten,dvt,ton:{x1:tonX1,x2:tonX2},min,gia,note,bom,xuong});
+    products.push({ma,ten,dvt,ton:{x1:tonX1,x2:tonX2},min,gia,congdoan,note,bom,xuong});
     toast('Đã thêm thành phẩm: '+ten);
   }
   persist();closeModal('modal-product');renderSP();updateSummary();
@@ -1787,7 +1806,8 @@ function renderDoanhThu(){
   const rows=prodLog.filter(l=>l.date&&l.date.slice(0,7)===mk).map(l=>{
     const p=products.find(x=>x.ma===l.ma);
     const gia=p?(p.gia||0):(l.gia||0); // Ưu tiên giá bán hiện tại của thành phẩm; nếu TP đã bị xóa thì dùng lại giá đã lưu lúc ghi nhận
-    return {...l,gia,doanhthu:l.sl*gia};
+    const congdoan=(p&&p.congdoan)?p.congdoan:'Chưa gán công đoạn';
+    return {...l,gia,congdoan,doanhthu:l.sl*gia};
   });
   const dtX1=rows.filter(l=>l.xuong==='x1').reduce((s,l)=>s+(l.doanhthu||0),0);
   const dtX2=rows.filter(l=>l.xuong==='x2').reduce((s,l)=>s+(l.doanhthu||0),0);
@@ -1795,6 +1815,21 @@ function renderDoanhThu(){
   document.getElementById('dt-x1').textContent=fN(dtX1)+'đ';
   document.getElementById('dt-x2').textContent=fN(dtX2)+'đ';
   document.getElementById('dt-sl').textContent=fN(rows.reduce((s,l)=>s+l.sl,0));
+  // Theo công đoạn
+  const byCd={};
+  rows.forEach(l=>{
+    if(!byCd[l.congdoan])byCd[l.congdoan]={sl:0,x1:0,x2:0};
+    byCd[l.congdoan].sl+=l.sl;
+    byCd[l.congdoan][l.xuong==='x2'?'x2':'x1']+=(l.doanhthu||0);
+  });
+  const cds=Object.keys(byCd).sort();
+  const cdBody=document.getElementById('dt-cd-body');
+  cdBody.innerHTML=cds.length?cds.map((cd,i)=>{
+    const r=byCd[cd];
+    return '<tr><td class="tc">'+(i+1)+'</td><td><span style="background:#f0e6f7;color:#5c3a7d;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+cd+'</span></td><td class="tc">'+fN(r.sl)+'</td>'
+      +'<td class="tr">'+fN(r.x1)+'đ</td><td class="tr">'+fN(r.x2)+'đ</td>'
+      +'<td class="tr" style="font-weight:700;color:#1e8449">'+fN(r.x1+r.x2)+'đ</td></tr>';
+  }).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr>';
   // Theo ngày
   const byDay={};
   rows.forEach(l=>{
@@ -1813,7 +1848,7 @@ function renderDoanhThu(){
   // Theo thành phẩm
   const byMa={};
   rows.forEach(l=>{
-    if(!byMa[l.ma])byMa[l.ma]={ten:l.ten,sl:0,x1:0,x2:0};
+    if(!byMa[l.ma])byMa[l.ma]={ten:l.ten,congdoan:l.congdoan,sl:0,x1:0,x2:0};
     byMa[l.ma].sl+=l.sl;
     byMa[l.ma][l.xuong==='x2'?'x2':'x1']+=(l.doanhthu||0);
   });
@@ -1822,19 +1857,21 @@ function renderDoanhThu(){
   spBody.innerHTML=mas.length?mas.map((ma,i)=>{
     const r=byMa[ma];
     return '<tr><td class="tc">'+(i+1)+'</td><td><div class="ma-code">'+ma+'</div></td><td class="item-ten">'+r.ten+'</td>'
+      +'<td><span style="background:#f0e6f7;color:#5c3a7d;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+r.congdoan+'</span></td>'
       +'<td class="tc">'+fN(r.sl)+'</td><td class="tr">'+fN(r.x1)+'đ</td><td class="tr">'+fN(r.x2)+'đ</td>'
       +'<td class="tr" style="font-weight:700;color:#1e8449">'+fN(r.x1+r.x2)+'đ</td></tr>';
-  }).join('') : '<tr><td colspan="7" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr>';
+  }).join('') : '<tr><td colspan="8" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr>';
 }
 function exportDtCSV(){
   const mk=monthKey(curMonthDt);
   const rows=prodLog.filter(l=>l.date&&l.date.slice(0,7)===mk).map(l=>{
     const p=products.find(x=>x.ma===l.ma);
     const gia=p?(p.gia||0):(l.gia||0);
-    return {...l,gia,doanhthu:l.sl*gia};
+    const congdoan=(p&&p.congdoan)?p.congdoan:'Chưa gán công đoạn';
+    return {...l,gia,congdoan,doanhthu:l.sl*gia};
   });
-  const r=[['Ngày','Mã TP','Tên thành phẩm','Xưởng','SL sản xuất','Giá bán','Doanh thu']];
-  rows.sort((a,b)=>a.date!==b.date?a.date.localeCompare(b.date):a.time.localeCompare(b.time)).forEach(l=>r.push([l.date,l.ma,l.ten,LOC_LABELS[l.xuong]||'Xưởng 1',l.sl,l.gia||0,l.doanhthu||0]));
+  const r=[['Ngày','Mã TP','Tên thành phẩm','Công đoạn','Xưởng','SL sản xuất','Giá bán','Doanh thu']];
+  rows.sort((a,b)=>a.date!==b.date?a.date.localeCompare(b.date):a.time.localeCompare(b.time)).forEach(l=>r.push([l.date,l.ma,l.ten,l.congdoan,LOC_LABELS[l.xuong]||'Xưởng 1',l.sl,l.gia||0,l.doanhthu||0]));
   dlCSV(r,'doanhthu-'+mk+'.csv');
   toast('Đã xuất CSV doanh thu tháng '+mk);
 }
