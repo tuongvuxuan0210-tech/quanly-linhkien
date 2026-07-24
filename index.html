@@ -981,6 +981,7 @@ function persist(){sSet('items',JSON.stringify(items));sSet('gdlog',JSON.stringi
 const FIREBASE_URL='https://tuongvx-data-default-rtdb.asia-southeast1.firebasedatabase.app';
 const CLOUD_PATH='/data.json';
 let suppressCloudPush=false, lastAppliedTs=0, pushCloudTimer=null, esCloud=null, cloudReady=false, pendingPush=false;
+let applyStateTimer=null, pendingCloudData=null, lastToastTs=0;
 
 function setCloudStatus(state){
   // state: 'ok' | 'off' | 'connecting'
@@ -1034,7 +1035,12 @@ function applyCloudState(state){
   // Vẽ lại toàn bộ giao diện đang có để phản ánh dữ liệu mới nhất
   updateSummary();
   renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();
-  toast('☁️ Dữ liệu vừa được cập nhật từ máy khác');
+  const tabActive=document.getElementById('pg-tq');
+  if(tabActive&&tabActive.classList.contains('active'))renderTqChart();
+  // Chỉ hiện thông báo tối đa 1 lần mỗi 4 giây — tránh dồn dập thông báo/nháy màn hình
+  // khi nhiều máy trong xưởng cùng lưu dữ liệu liên tiếp trong thời gian ngắn
+  const nowTs=Date.now();
+  if(nowTs-lastToastTs>4000){lastToastTs=nowTs;toast('☁️ Dữ liệu vừa được cập nhật từ máy khác');}
 }
 
 let offStatusTimer=null;
@@ -1077,7 +1083,12 @@ function handleCloudEvent(ev){
   }
   pendingPush=false; // ưu tiên dữ liệu thật từ cloud thay vì thay đổi cục bộ trước khi kịp đồng bộ
   lastAppliedTs=incomingTs;
-  applyCloudState(data);
+  // Gộp nhiều bản cập nhật liên tiếp (khi nhiều máy trong xưởng cùng lưu dồn dập)
+  // thành 1 lần vẽ lại duy nhất sau 400ms yên lặng, thay vì vẽ lại ngay mỗi lần —
+  // đây là nguyên nhân chính gây cảm giác "nháy" ở tab Tổng Quan khi nhiều người dùng cùng lúc.
+  pendingCloudData=data;
+  clearTimeout(applyStateTimer);
+  applyStateTimer=setTimeout(()=>{applyCloudState(pendingCloudData);pendingCloudData=null;},400);
 }
 
 // ── SAO LƯU / KHÔI PHỤC DỮ LIỆU (chuyển dữ liệu sang máy khác) ───────────────
