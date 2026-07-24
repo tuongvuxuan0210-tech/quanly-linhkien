@@ -289,6 +289,9 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
         </select>
       </div>
     </div>
+    <div class="frow">
+      <div class="ff"><label>Giá bán (đ / đơn vị)</label><input id="fp-gia" type="number" min="0" step="1000" placeholder="VD: 15000000"><span class="hint">Dùng để tự tính doanh thu khi ghi nhận sản lượng SX</span></div>
+    </div>
     <div class="info-box" style="margin-top:-6px">ℹ Xưởng sản xuất mặc định chỉ là gợi ý — mỗi lần ghi nhận sản lượng SX hoặc xuất hàng vẫn có thể chọn lại đúng xưởng thực tế (áp dụng khi 1 mã TP được làm ở cả 2 xưởng).</div>
     <div class="frow full"><div class="ff"><label>Ghi chú</label><input id="fp-note" placeholder="Tuỳ chọn..."></div></div>
     <div class="info-box">ℹ Định mức BOM = số lượng linh kiện cần dùng để sản xuất <b>1</b> thành phẩm. Khi ghi nhận sản lượng sản xuất, hệ thống sẽ tự động trừ linh kiện theo định mức này.</div>
@@ -424,6 +427,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div class="tab" onclick="switchTab(&#39;cp&#39;)">🔀 Cấp Phát Xưởng</div>
   <div class="tab" onclick="switchTab(&#39;bom&#39;)">🧩 Định Mức BOM</div>
   <div class="tab" onclick="switchTab(&#39;sx&#39;)">🏭 Sản Lượng SX</div>
+  <div class="tab" onclick="switchTab(&#39;dt&#39;)">💰 Doanh Thu</div>
   <div class="tab" onclick="switchTab(&#39;xh&#39;)">🚚 Xuất Hàng TP</div>
   <div class="tab" onclick="switchTab(&#39;kh&#39;)">📋 Kế Hoạch SX</div>
   <div class="tab" onclick="switchTab(&#39;rq&#39;)">📋 Phiếu Request</div>
@@ -691,7 +695,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div class="tbl-wrap">
     <table><thead><tr>
       <th style="width:34px">STT</th><th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th>
-      <th>ĐVT</th><th>Xưởng SX mặc định</th><th>Tồn Xưởng 1</th><th>Tồn Xưởng 2</th><th>Tổng tồn TP</th><th>Số dòng BOM</th><th>Trạng thái</th><th>Thao tác</th>
+      <th>ĐVT</th><th>Xưởng SX mặc định</th><th>Tồn Xưởng 1</th><th>Tồn Xưởng 2</th><th>Tổng tồn TP</th><th>Giá bán</th><th>Số dòng BOM</th><th>Trạng thái</th><th>Thao tác</th>
     </tr></thead><tbody id="bom-list-body"></tbody></table>
   </div>
 </div>
@@ -722,6 +726,38 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     </tr></thead><tbody id="sx-body"><tr><td colspan="12" style="text-align:center;padding:32px;color:#999"><div style="font-size:28px;margin-bottom:8px">🏭</div>Chưa có sản lượng nào được ghi nhận trong ngày này.<br><span style="font-size:11px">Bấm <b>+ Ghi nhận sản lượng</b> để nhập.</span></td></tr></tbody></table>
   </div>
   <div style="font-size:11px;color:#999;margin-top:4px" id="sx-count">Hiển thị 0 lượt ghi nhận trong ngày 2026-07-21</div>
+</div>
+
+<!-- DOANH THU -->
+<div class="pg" id="pg-dt">
+  <div class="day-header">
+    <div class="day-nav">
+      <button class="btn" onclick="chMonthDt(-1)">‹</button>
+      <span class="cur-date" id="disp-month-dt">Tháng 07/2026</span>
+      <button class="btn" onclick="chMonthDt(1)">›</button>
+      <button class="btn btn-red" onclick="goCurMonthDt()">Tháng này</button>
+    </div>
+    <button class="btn" onclick="exportDtCSV()" style="margin-left:auto">⬇ CSV</button>
+  </div>
+  <div class="info-box">ℹ Doanh thu = Số lượng sản xuất × Giá bán (đặt giá bán tại tab <b>Định Mức BOM</b>, mục sửa từng thành phẩm). Doanh thu được tính theo giá tại đúng thời điểm ghi nhận sản lượng, tách riêng theo từng Xưởng SX.</div>
+  <div class="cards4">
+    <div class="card"><div class="card-label">Tổng doanh thu tháng</div><div class="card-val cg" id="dt-total" style="font-size:18px">0đ</div></div>
+    <div class="card"><div class="card-label">Doanh thu Xưởng 1</div><div class="card-val cb" id="dt-x1" style="font-size:18px">0đ</div></div>
+    <div class="card"><div class="card-label">Doanh thu Xưởng 2</div><div class="card-val ca" id="dt-x2" style="font-size:18px">0đ</div></div>
+    <div class="card"><div class="card-label">Tổng SL sản xuất tháng</div><div class="card-val" id="dt-sl">0</div></div>
+  </div>
+  <div class="tbl-wrap">
+    <div class="chart-title" style="padding:10px 10px 0">Doanh thu theo ngày</div>
+    <table><thead><tr>
+      <th style="width:40px">STT</th><th class="tl">Ngày</th><th>SL sản xuất</th><th>Doanh thu Xưởng 1</th><th>Doanh thu Xưởng 2</th><th>Tổng doanh thu ngày</th>
+    </tr></thead><tbody id="dt-day-body"><tr><td colspan="6" style="text-align:center;padding:32px;color:#999">Chưa có dữ liệu sản lượng trong tháng này.</td></tr></tbody></table>
+  </div>
+  <div class="tbl-wrap" style="margin-top:12px">
+    <div class="chart-title" style="padding:10px 10px 0">Doanh thu theo thành phẩm (trong tháng)</div>
+    <table><thead><tr>
+      <th style="width:40px">STT</th><th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th><th>SL sản xuất</th><th>Doanh thu Xưởng 1</th><th>Doanh thu Xưởng 2</th><th>Tổng doanh thu</th>
+    </tr></thead><tbody id="dt-sp-body"><tr><td colspan="7" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr></tbody></table>
+  </div>
 </div>
 
 <!-- XUẤT HÀNG THÀNH PHẨM -->
@@ -871,6 +907,7 @@ let allocLog=loadJ('alloclog',[]);
 let curDateSx=new Date();
 let curDateXh=new Date();
 let curDateCp=new Date();
+let curMonthDt=new Date();curMonthDt.setDate(1);
 let defectCats=loadJ('defectcats',JSON.parse(JSON.stringify(DFLT_DEFECT_CATS)));
 let planData=loadJ('plandata',{});
 function tomorrowISO(){const d=new Date();d.setDate(d.getDate()+1);return fISO(d);}
@@ -1022,7 +1059,7 @@ function applyCloudState(state){
   suppressCloudPush=false;
   // Vẽ lại toàn bộ giao diện đang có để phản ánh dữ liệu mới nhất
   updateSummary();
-  renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();
+  renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDoanhThu();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();
   // Chỉ hiện thông báo tối đa 1 lần mỗi 4 giây — tránh dồn dập thông báo/nháy màn hình
   // khi nhiều máy trong xưởng cùng lưu dữ liệu liên tiếp trong thời gian ngắn
   const nowTs=Date.now();
@@ -1181,7 +1218,7 @@ function switchTab(id){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('pg-'+id).classList.add('active');
-  const tabs=['tq','nx','tk','cp','bom','sx','xh','kh','rq','ls','dm'];
+  const tabs=['tq','nx','tk','cp','bom','sx','dt','xh','kh','rq','ls','dm'];
   document.querySelectorAll('.tab')[tabs.indexOf(id)].classList.add('active');
   if(id==='tq')updateSummary();
   if(id==='ls')renderHis();
@@ -1191,6 +1228,7 @@ function switchTab(id){
   if(id==='cp'){document.getElementById('disp-date-cp').textContent=fDate(curDateCp);renderDayCp();}
   if(id==='bom')renderSP();
   if(id==='sx'){document.getElementById('disp-date-sx').textContent=fDate(curDateSx);renderDaySx();}
+  if(id==='dt'){document.getElementById('disp-month-dt').textContent=fMonthLabel(curMonthDt);renderDoanhThu();}
   if(id==='xh'){document.getElementById('disp-date-xh').textContent=fDate(curDateXh);renderDayXh();}
   if(id==='kh'){document.getElementById('kh-date').value=curPlanDate;renderKhRows();renderKhShortage();}
 }
@@ -1622,13 +1660,14 @@ function renderSP(){
       +'<td class="tr">'+fN(getTonSP(p,'x1'))+'</td>'
       +'<td class="tr">'+fN(getTonSP(p,'x2'))+'</td>'
       +'<td class="tr" style="font-weight:700;font-size:14px">'+fN(getTonSP(p))+'</td>'
+      +'<td class="tr" style="color:#1e8449;font-weight:600">'+(p.gia?fN(p.gia)+'đ':'<span style="color:#ccc">Chưa đặt giá</span>')+'</td>'
       +'<td class="tc">'+(p.bom||[]).length+'</td>'
       +'<td class="tc">'+stM[st]+'</td>'
       +'<td class="tc" style="white-space:nowrap">'
       +'<button onclick="openEditProductModal(\''+p.ma+'\')" style="background:none;border:none;cursor:pointer;color:#185FA5;font-size:15px;padding:2px 4px" title="Sửa">✏</button>'
       +'<button onclick="delProduct(\''+p.ma+'\')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:15px;padding:2px 4px" title="Xóa">🗑</button>'
       +'</td></tr>';
-  }).join('') : '<tr><td colspan="11" style="text-align:center;padding:24px;color:#999">Chưa có thành phẩm nào. Bấm "+ Thêm thành phẩm" để khai báo.</td></tr>';
+  }).join('') : '<tr><td colspan="12" style="text-align:center;padding:24px;color:#999">Chưa có thành phẩm nào. Bấm "+ Thêm thành phẩm" để khai báo.</td></tr>';
 }
 function bomComponentOptions(selMa){
   return '<option value="">-- Chọn linh kiện --</option>'+items.map(it=>'<option value="'+it.ma+'"'+(it.ma===selMa?' selected':'')+'>['+it.ma+'] '+it.ten+'</option>').join('');
@@ -1654,6 +1693,7 @@ function openAddProductModal(){if(!requireAdmin())return;
   ['fp-ma','fp-ten','fp-note'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fp-dvt').value='xe';
   document.getElementById('fp-ton-x1').value='0';document.getElementById('fp-ton-x2').value='0';document.getElementById('fp-min').value='1';
+  document.getElementById('fp-gia').value='';
   document.getElementById('fp-xuong').value='x1';
   document.getElementById('fp-ma').removeAttribute('readonly');document.getElementById('fp-ma').style.background='';
   fillCopyBomOptions(null);
@@ -1673,6 +1713,7 @@ function openEditProductModal(ma){if(!requireAdmin())return;
   document.getElementById('fp-ton-x1').value=getTonSP(p,'x1');
   document.getElementById('fp-ton-x2').value=getTonSP(p,'x2');
   document.getElementById('fp-min').value=p.min||1;
+  document.getElementById('fp-gia').value=p.gia||'';
   document.getElementById('fp-xuong').value=p.xuong||'x1';
   document.getElementById('fp-note').value=p.note||'';
   fillCopyBomOptions(ma);
@@ -1709,16 +1750,17 @@ function saveProduct(){if(!requireAdmin())return;
   const tonX1=parseFloat(document.getElementById('fp-ton-x1').value)||0;
   const tonX2=parseFloat(document.getElementById('fp-ton-x2').value)||0;
   const min=parseFloat(document.getElementById('fp-min').value)||0;
+  const gia=parseFloat(document.getElementById('fp-gia').value)||0;
   const note=document.getElementById('fp-note').value||'';
   const xuong=document.getElementById('fp-xuong').value||'x1';
   const bom=editBomRows.filter(r=>r.ma&&r.sl>0);
   if(editPMa){
     const p=products.find(x=>x.ma===editPMa);
-    if(p){p.ten=ten;p.dvt=dvt;p.ton={x1:tonX1,x2:tonX2};p.min=min;p.note=note;p.bom=bom;p.xuong=xuong;}
+    if(p){p.ten=ten;p.dvt=dvt;p.ton={x1:tonX1,x2:tonX2};p.min=min;p.gia=gia;p.note=note;p.bom=bom;p.xuong=xuong;}
     toast('Đã cập nhật thành phẩm: '+ten);
   } else {
     if(products.find(p=>p.ma===ma)){toast('Mã "'+ma+'" đã tồn tại!',true);return;}
-    products.push({ma,ten,dvt,ton:{x1:tonX1,x2:tonX2},min,note,bom,xuong});
+    products.push({ma,ten,dvt,ton:{x1:tonX1,x2:tonX2},min,gia,note,bom,xuong});
     toast('Đã thêm thành phẩm: '+ten);
   }
   persist();closeModal('modal-product');renderSP();updateSummary();
@@ -1734,6 +1776,60 @@ function delProduct(ma){if(!requireAdmin())return;
 // ── SẢN LƯỢNG SẢN XUẤT (tự động trừ linh kiện theo BOM) ───────────────────────
 function chDaySx(d){curDateSx=new Date(curDateSx);curDateSx.setDate(curDateSx.getDate()+d);document.getElementById('disp-date-sx').textContent=fDate(curDateSx);renderDaySx();}
 function goTodaySx(){curDateSx=new Date();document.getElementById('disp-date-sx').textContent=fDate(curDateSx);renderDaySx();}
+
+// ── DOANH THU ─────────────────────────────────────────────────────────────────
+function fMonthLabel(d){return 'Tháng '+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
+function monthKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function chMonthDt(d){curMonthDt=new Date(curMonthDt);curMonthDt.setMonth(curMonthDt.getMonth()+d);document.getElementById('disp-month-dt').textContent=fMonthLabel(curMonthDt);renderDoanhThu();}
+function goCurMonthDt(){curMonthDt=new Date();curMonthDt.setDate(1);document.getElementById('disp-month-dt').textContent=fMonthLabel(curMonthDt);renderDoanhThu();}
+function renderDoanhThu(){
+  const mk=monthKey(curMonthDt);
+  const rows=prodLog.filter(l=>l.date&&l.date.slice(0,7)===mk);
+  const dtX1=rows.filter(l=>l.xuong==='x1').reduce((s,l)=>s+(l.doanhthu||0),0);
+  const dtX2=rows.filter(l=>l.xuong==='x2').reduce((s,l)=>s+(l.doanhthu||0),0);
+  document.getElementById('dt-total').textContent=fN(dtX1+dtX2)+'đ';
+  document.getElementById('dt-x1').textContent=fN(dtX1)+'đ';
+  document.getElementById('dt-x2').textContent=fN(dtX2)+'đ';
+  document.getElementById('dt-sl').textContent=fN(rows.reduce((s,l)=>s+l.sl,0));
+  // Theo ngày
+  const byDay={};
+  rows.forEach(l=>{
+    if(!byDay[l.date])byDay[l.date]={sl:0,x1:0,x2:0};
+    byDay[l.date].sl+=l.sl;
+    byDay[l.date][l.xuong==='x2'?'x2':'x1']+=(l.doanhthu||0);
+  });
+  const days=Object.keys(byDay).sort();
+  const dayBody=document.getElementById('dt-day-body');
+  dayBody.innerHTML=days.length?days.map((ds,i)=>{
+    const r=byDay[ds];
+    return '<tr><td class="tc">'+(i+1)+'</td><td>'+ds+'</td><td class="tc">'+fN(r.sl)+'</td>'
+      +'<td class="tr">'+fN(r.x1)+'đ</td><td class="tr">'+fN(r.x2)+'đ</td>'
+      +'<td class="tr" style="font-weight:700;color:#1e8449">'+fN(r.x1+r.x2)+'đ</td></tr>';
+  }).join('') : '<tr><td colspan="6" style="text-align:center;padding:32px;color:#999">Chưa có dữ liệu sản lượng trong tháng này.</td></tr>';
+  // Theo thành phẩm
+  const byMa={};
+  rows.forEach(l=>{
+    if(!byMa[l.ma])byMa[l.ma]={ten:l.ten,sl:0,x1:0,x2:0};
+    byMa[l.ma].sl+=l.sl;
+    byMa[l.ma][l.xuong==='x2'?'x2':'x1']+=(l.doanhthu||0);
+  });
+  const mas=Object.keys(byMa).sort();
+  const spBody=document.getElementById('dt-sp-body');
+  spBody.innerHTML=mas.length?mas.map((ma,i)=>{
+    const r=byMa[ma];
+    return '<tr><td class="tc">'+(i+1)+'</td><td><div class="ma-code">'+ma+'</div></td><td class="item-ten">'+r.ten+'</td>'
+      +'<td class="tc">'+fN(r.sl)+'</td><td class="tr">'+fN(r.x1)+'đ</td><td class="tr">'+fN(r.x2)+'đ</td>'
+      +'<td class="tr" style="font-weight:700;color:#1e8449">'+fN(r.x1+r.x2)+'đ</td></tr>';
+  }).join('') : '<tr><td colspan="7" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr>';
+}
+function exportDtCSV(){
+  const mk=monthKey(curMonthDt);
+  const rows=prodLog.filter(l=>l.date&&l.date.slice(0,7)===mk);
+  const r=[['Ngày','Mã TP','Tên thành phẩm','Xưởng','SL sản xuất','Giá bán','Doanh thu']];
+  rows.sort((a,b)=>a.date!==b.date?a.date.localeCompare(b.date):a.time.localeCompare(b.time)).forEach(l=>r.push([l.date,l.ma,l.ten,LOC_LABELS[l.xuong]||'Xưởng 1',l.sl,l.gia||0,l.doanhthu||0]));
+  dlCSV(r,'doanhthu-'+mk+'.csv');
+  toast('Đã xuất CSV doanh thu tháng '+mk);
+}
 function openSxModal(){if(!requireAdmin())return;
   if(!products.length){toast('Chưa có thành phẩm nào! Vào tab "Định Mức BOM" để khai báo trước.',true);return;}
   const sel=document.getElementById('msx-ma');
@@ -1845,12 +1941,13 @@ function saveSx(){if(!requireAdmin())return;
     consumedIds.push(gid);
   });
   addTonSP(p,loc,sl);
-  prodLog.push({id:genId(),date:ds,time,ma:p.ma,ten:p.ten,dvt:p.dvt,sl,xuong:loc,nguoi,note,ton_sau:getTonSP(p,loc),consumedIds,loi});
+  const gia=p.gia||0,doanhthu=sl*gia;
+  prodLog.push({id:genId(),date:ds,time,ma:p.ma,ten:p.ten,dvt:p.dvt,sl,xuong:loc,nguoi,note,ton_sau:getTonSP(p,loc),consumedIds,loi,gia,doanhthu});
   persist();
   closeModal('modal-sx');
   if(fISO(curDateSx)!==ds){curDateSx=new Date(ds+'T00:00:00');document.getElementById('disp-date-sx').textContent=fDate(curDateSx);}
-  renderDaySx();renderDayGd();renderTonKho();renderSP();updateSummary();
-  toast('🏭 Đã ghi nhận SX '+fN(sl)+' '+p.dvt+' — '+p.ten+' (đã tự trừ linh kiện tại '+LOC_LABELS[loc]+')');
+  renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();updateSummary();
+  toast('🏭 Đã ghi nhận SX '+fN(sl)+' '+p.dvt+' — '+p.ten+' (đã tự trừ linh kiện tại '+LOC_LABELS[loc]+')'+(doanhthu?' | Doanh thu: '+fN(doanhthu)+'đ':''));
 }
 function renderDaySx(){
   const ds=fISO(curDateSx);
@@ -1902,7 +1999,7 @@ function editSxXuong(id){
   }
   r.xuong=newLoc;
   persist();
-  renderDaySx();renderDayGd();renderTonKho();renderSP();updateSummary();
+  renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();updateSummary();
   toast('✅ Đã đổi xưởng sản xuất sang '+LOC_LABELS[newLoc]+', tự động chuyển lại linh kiện và tồn thành phẩm.');
 }
 function defectSummary(loi){
@@ -1924,7 +2021,7 @@ function delSx(id){if(!requireAdmin())return;
   });
   gdLog=gdLog.filter(x=>!(r.consumedIds||[]).includes(x.id));
   prodLog=prodLog.filter(x=>x.id!==id);
-  persist();renderDaySx();renderDayGd();renderTonKho();renderSP();updateSummary();
+  persist();renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();updateSummary();
   toast('Đã xóa lượt sản xuất và hoàn lại linh kiện');
 }
 function exportSxCSV(){const ds=fISO(curDateSx),r=[['Giờ','Mã TP','Tên thành phẩm','ĐVT','SL sản xuất','Xưởng SX','Người TH','Tồn TP sau','Lỗi phát sinh','Ghi chú']];prodLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>r.push([l.time,l.ma,l.ten,l.dvt,l.sl,LOC_LABELS[l.xuong]||'Xưởng 1',l.nguoi||'',l.ton_sau,defectSummaryText(l.loi),l.note||'']));dlCSV(r,'sanluong-'+ds+'.csv');toast('Đã xuất CSV');}
@@ -2303,6 +2400,7 @@ function init(){
   document.getElementById('disp-date-sx').textContent=fDate(curDateSx);
   document.getElementById('disp-date-xh').textContent=fDate(curDateXh);
   document.getElementById('disp-date-cp').textContent=fDate(curDateCp);
+  document.getElementById('disp-month-dt').textContent=fMonthLabel(curMonthDt);
   document.getElementById('rq-ngay').value=fISO(now);
   document.getElementById('rq-ma').value='REQ-'+fISO(now).replace(/-/g,'')+'-'+String(rqCtr).padStart(3,'0');
   document.getElementById('kh-date').value=curPlanDate;
