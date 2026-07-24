@@ -739,7 +739,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     </div>
     <button class="btn" onclick="exportDtCSV()" style="margin-left:auto">⬇ CSV</button>
   </div>
-  <div class="info-box">ℹ Doanh thu = Số lượng sản xuất × Giá bán (đặt giá bán tại tab <b>Định Mức BOM</b>, mục sửa từng thành phẩm). Doanh thu được tính theo giá tại đúng thời điểm ghi nhận sản lượng, tách riêng theo từng Xưởng SX.</div>
+  <div class="info-box">ℹ Doanh thu = Số lượng sản xuất × <b>Giá bán hiện tại</b> của thành phẩm (đặt/sửa giá tại tab <b>Định Mức BOM</b>). Nếu đổi giá, doanh thu của toàn bộ sản lượng đã ghi nhận trước đó (kể cả tháng trước) cũng sẽ được tính lại theo giá mới nhất — không giữ giá cũ.</div>
   <div class="cards4">
     <div class="card"><div class="card-label">Tổng doanh thu tháng</div><div class="card-val cg" id="dt-total" style="font-size:18px">0đ</div></div>
     <div class="card"><div class="card-label">Doanh thu Xưởng 1</div><div class="card-val cb" id="dt-x1" style="font-size:18px">0đ</div></div>
@@ -1784,7 +1784,11 @@ function chMonthDt(d){curMonthDt=new Date(curMonthDt);curMonthDt.setMonth(curMon
 function goCurMonthDt(){curMonthDt=new Date();curMonthDt.setDate(1);document.getElementById('disp-month-dt').textContent=fMonthLabel(curMonthDt);renderDoanhThu();}
 function renderDoanhThu(){
   const mk=monthKey(curMonthDt);
-  const rows=prodLog.filter(l=>l.date&&l.date.slice(0,7)===mk);
+  const rows=prodLog.filter(l=>l.date&&l.date.slice(0,7)===mk).map(l=>{
+    const p=products.find(x=>x.ma===l.ma);
+    const gia=p?(p.gia||0):(l.gia||0); // Ưu tiên giá bán hiện tại của thành phẩm; nếu TP đã bị xóa thì dùng lại giá đã lưu lúc ghi nhận
+    return {...l,gia,doanhthu:l.sl*gia};
+  });
   const dtX1=rows.filter(l=>l.xuong==='x1').reduce((s,l)=>s+(l.doanhthu||0),0);
   const dtX2=rows.filter(l=>l.xuong==='x2').reduce((s,l)=>s+(l.doanhthu||0),0);
   document.getElementById('dt-total').textContent=fN(dtX1+dtX2)+'đ';
@@ -1824,7 +1828,11 @@ function renderDoanhThu(){
 }
 function exportDtCSV(){
   const mk=monthKey(curMonthDt);
-  const rows=prodLog.filter(l=>l.date&&l.date.slice(0,7)===mk);
+  const rows=prodLog.filter(l=>l.date&&l.date.slice(0,7)===mk).map(l=>{
+    const p=products.find(x=>x.ma===l.ma);
+    const gia=p?(p.gia||0):(l.gia||0);
+    return {...l,gia,doanhthu:l.sl*gia};
+  });
   const r=[['Ngày','Mã TP','Tên thành phẩm','Xưởng','SL sản xuất','Giá bán','Doanh thu']];
   rows.sort((a,b)=>a.date!==b.date?a.date.localeCompare(b.date):a.time.localeCompare(b.time)).forEach(l=>r.push([l.date,l.ma,l.ten,LOC_LABELS[l.xuong]||'Xưởng 1',l.sl,l.gia||0,l.doanhthu||0]));
   dlCSV(r,'doanhthu-'+mk+'.csv');
