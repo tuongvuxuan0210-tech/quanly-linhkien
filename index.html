@@ -429,6 +429,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div class="tab" onclick="switchTab(&#39;bom&#39;)">🧩 Định Mức BOM</div>
   <div class="tab" onclick="switchTab(&#39;sx&#39;)">🏭 Sản Lượng SX</div>
   <div class="tab" onclick="switchTab(&#39;dt&#39;)">💰 Doanh Thu</div>
+  <div class="tab" onclick="switchTab(&#39;dh&#39;)">📦 Đơn Hàng</div>
   <div class="tab" onclick="switchTab(&#39;xh&#39;)">🚚 Xuất Hàng TP</div>
   <div class="tab" onclick="switchTab(&#39;kh&#39;)">📋 Kế Hoạch SX</div>
   <div class="tab" onclick="switchTab(&#39;rq&#39;)">📋 Phiếu Request</div>
@@ -767,6 +768,48 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   </div>
 </div>
 
+<!-- ĐƠN HÀNG -->
+<div class="pg" id="pg-dh">
+  <div class="day-header">
+    <button class="btn btn-green" onclick="openAddOrderModal()">+ Thêm đơn hàng</button>
+    <input id="dh-srch" placeholder="🔍 Tìm mã đơn hàng, mã TP, tên TP..." oninput="renderOrders()" style="margin-left:8px;flex:1;max-width:280px">
+  </div>
+  <div class="info-box">ℹ Số lượng đã chạy = tổng sản lượng đã ghi nhận (tab Sản Lượng SX) cho đúng thành phẩm đó, được cộng dồn theo nguyên tắc <b>đơn hàng tạo trước được ưu tiên trước (FIFO)</b>. Nếu 1 thành phẩm có nhiều đơn hàng cùng lúc, sản lượng sẽ lấp đầy đơn cũ nhất trước rồi mới sang đơn tiếp theo.</div>
+  <div class="cards4">
+    <div class="card"><div class="card-label">Tổng đơn hàng</div><div class="card-val" id="dh-total">0</div></div>
+    <div class="card"><div class="card-label">Đang chạy</div><div class="card-val ca" id="dh-running">0</div></div>
+    <div class="card"><div class="card-label">Hoàn thành</div><div class="card-val cg" id="dh-done">0</div></div>
+    <div class="card"><div class="card-label">Tổng SL còn thiếu</div><div class="card-val cr" id="dh-remain">0</div></div>
+  </div>
+  <div class="tbl-wrap">
+    <table><thead><tr>
+      <th style="width:40px">STT</th><th class="tl">Mã đơn hàng</th><th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th><th>SL đặt</th><th>SL đã chạy</th><th>Còn lại</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th>
+    </tr></thead><tbody id="dh-body"><tr><td colspan="10" style="text-align:center;padding:24px;color:#999">Chưa có đơn hàng nào.</td></tr></tbody></table>
+  </div>
+</div>
+
+<!-- Modal Đơn Hàng -->
+<div class="modal" id="modal-order">
+  <div class="modal-box">
+    <div class="modal-hd"><span id="order-modal-title">Thêm đơn hàng</span><span class="x" onclick="closeModal('modal-order')">✕</span></div>
+    <div class="frow">
+      <div class="ff"><label>Mã đơn hàng (PO) <span style="color:#c0392b">*</span></label><input id="dh-po" placeholder="VD: PO-2026-001"></div>
+      <div class="ff"><label>Thành phẩm <span style="color:#c0392b">*</span></label><select id="dh-ma"></select></div>
+    </div>
+    <div class="frow">
+      <div class="ff"><label>Số lượng đặt <span style="color:#c0392b">*</span></label><input id="dh-sl" type="number" min="1" value="1"></div>
+      <div class="ff"><label>Ngày tạo</label><input id="dh-created" type="date"></div>
+    </div>
+    <div class="frow">
+      <div class="ff" style="flex:1 1 100%"><label>Ghi chú</label><input id="dh-note" placeholder="Khách hàng, hạn giao..."></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeModal('modal-order')">Hủy</button>
+      <button class="btn btn-green" onclick="saveOrder()">💾 Lưu đơn hàng</button>
+    </div>
+  </div>
+</div>
+
 <!-- XUẤT HÀNG THÀNH PHẨM -->
 <div class="pg" id="pg-xh">
   <div class="day-header">
@@ -915,6 +958,7 @@ let curDateSx=new Date();
 let curDateXh=new Date();
 let curDateCp=new Date();
 let curMonthDt=new Date();curMonthDt.setDate(1);
+let orders=loadJ('orders',[]);
 let defectCats=loadJ('defectcats',JSON.parse(JSON.stringify(DFLT_DEFECT_CATS)));
 let planData=loadJ('plandata',{});
 function tomorrowISO(){const d=new Date();d.setDate(d.getDate()+1);return fISO(d);}
@@ -1006,7 +1050,7 @@ function updateAdminUI(){
   else{el.textContent='🔒 Chưa đăng nhập';el.onclick=showLoginGate;el.style.cursor='pointer';el.style.background='rgba(255,255,255,.15)';}
 }
 
-function persist(){sSet('items',JSON.stringify(items));sSet('gdlog',JSON.stringify(gdLog));sSet('rq',JSON.stringify(rqRows));sSet('rqc',rqCtr);sSet('products',JSON.stringify(products));sSet('prodlog',JSON.stringify(prodLog));sSet('shiplog',JSON.stringify(shipLog));sSet('alloclog',JSON.stringify(allocLog));sSet('defectcats',JSON.stringify(defectCats));sSet('plandata',JSON.stringify(planData));if(!suppressCloudPush)pushCloud();}
+function persist(){sSet('items',JSON.stringify(items));sSet('gdlog',JSON.stringify(gdLog));sSet('rq',JSON.stringify(rqRows));sSet('rqc',rqCtr);sSet('products',JSON.stringify(products));sSet('prodlog',JSON.stringify(prodLog));sSet('shiplog',JSON.stringify(shipLog));sSet('alloclog',JSON.stringify(allocLog));sSet('defectcats',JSON.stringify(defectCats));sSet('plandata',JSON.stringify(planData));sSet('orders',JSON.stringify(orders));if(!suppressCloudPush)pushCloud();}
 
 // ── ĐỒNG BỘ DỮ LIỆU ĐÁM MÂY (nhiều máy dùng chung 1 dữ liệu, real-time) ──────
 // Dùng Firebase Realtime Database qua REST API + Server-Sent Events (không cần SDK).
@@ -1024,7 +1068,7 @@ function setCloudStatus(state){
 }
 
 function collectState(){
-  return {items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,allocLog,defectCats,planData,_ts:Date.now()};
+  return {items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,allocLog,defectCats,planData,orders,_ts:Date.now()};
 }
 
 function pushCloud(){
@@ -1062,11 +1106,12 @@ function applyCloudState(state){
   allocLog=state.allocLog||allocLog;
   defectCats=state.defectCats||defectCats;
   planData=state.planData||planData;
+  orders=state.orders||orders;
   persist(); // chỉ lưu cache máy này, không đẩy ngược lên cloud (suppressCloudPush đang bật)
   suppressCloudPush=false;
   // Vẽ lại toàn bộ giao diện đang có để phản ánh dữ liệu mới nhất
   updateSummary();
-  renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDoanhThu();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();
+  renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDoanhThu();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();renderOrders();
   // Chỉ hiện thông báo tối đa 1 lần mỗi 4 giây — tránh dồn dập thông báo/nháy màn hình
   // khi nhiều máy trong xưởng cùng lưu dữ liệu liên tiếp trong thời gian ngắn
   const nowTs=Date.now();
@@ -1135,7 +1180,7 @@ function applyPendingCloudUpdate(){
 function exportBackup(){
   const data={
     __meta:{app:'assembly_control',exported_at:new Date().toISOString(),version:1},
-    items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,defectCats
+    items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,defectCats,orders
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -1163,10 +1208,11 @@ function importBackup(file){if(!requireAdmin())return;
     prodLog=data.prodLog||[];
     shipLog=data.shipLog||[];
     defectCats=data.defectCats||defectCats;
+    orders=data.orders||[];
     persist();
     document.getElementById('backup-file-input').value='';
     switchTab('tq');
-    renderTonKho();renderDayGd();renderDM();renderSP();renderDaySx();renderDayXh();updateSummary();
+    renderTonKho();renderDayGd();renderDM();renderSP();renderDaySx();renderDayXh();renderOrders();updateSummary();
     toast('✅ Đã nhập dữ liệu thành công từ file sao lưu!');
   };
   reader.onerror=function(){toast('Không đọc được file!',true);};
@@ -1225,7 +1271,7 @@ function switchTab(id){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('pg-'+id).classList.add('active');
-  const tabs=['tq','nx','tk','cp','bom','sx','dt','xh','kh','rq','ls','dm'];
+  const tabs=['tq','nx','tk','cp','bom','sx','dt','dh','xh','kh','rq','ls','dm'];
   document.querySelectorAll('.tab')[tabs.indexOf(id)].classList.add('active');
   if(id==='tq')updateSummary();
   if(id==='ls')renderHis();
@@ -1236,6 +1282,7 @@ function switchTab(id){
   if(id==='bom')renderSP();
   if(id==='sx'){document.getElementById('disp-date-sx').textContent=fDate(curDateSx);renderDaySx();}
   if(id==='dt'){document.getElementById('disp-month-dt').textContent=fMonthLabel(curMonthDt);renderDoanhThu();}
+  if(id==='dh')renderOrders();
   if(id==='xh'){document.getElementById('disp-date-xh').textContent=fDate(curDateXh);renderDayXh();}
   if(id==='kh'){document.getElementById('kh-date').value=curPlanDate;renderKhRows();renderKhShortage();}
 }
@@ -1792,6 +1839,106 @@ function delProduct(ma){if(!requireAdmin())return;
   toast('Đã xóa: '+p.ten);
 }
 
+// ── ĐƠN HÀNG (theo dõi tiến độ chạy hàng theo PO, cộng dồn FIFO theo thành phẩm) ─
+let editOrderId=null;
+function openAddOrderModal(){if(!requireAdmin())return;
+  editOrderId=null;
+  document.getElementById('order-modal-title').textContent='Thêm đơn hàng';
+  document.getElementById('dh-po').value='';
+  document.getElementById('dh-sl').value=1;
+  document.getElementById('dh-created').value=fISO(new Date());
+  document.getElementById('dh-note').value='';
+  fillOrderProductOptions();
+  document.getElementById('modal-order').classList.add('open');
+}
+function openEditOrderModal(id){if(!requireAdmin())return;
+  const o=orders.find(x=>x.id===id);if(!o)return;
+  editOrderId=id;
+  document.getElementById('order-modal-title').textContent='Sửa đơn hàng';
+  document.getElementById('dh-po').value=o.po;
+  document.getElementById('dh-sl').value=o.sl;
+  document.getElementById('dh-created').value=o.created||fISO(new Date());
+  document.getElementById('dh-note').value=o.note||'';
+  fillOrderProductOptions();
+  document.getElementById('dh-ma').value=o.ma;
+  document.getElementById('modal-order').classList.add('open');
+}
+function fillOrderProductOptions(){
+  const sel=document.getElementById('dh-ma');
+  sel.innerHTML=products.map(p=>'<option value="'+p.ma+'">['+p.ma+'] '+p.ten+'</option>').join('');
+}
+function saveOrder(){if(!requireAdmin())return;
+  const po=(document.getElementById('dh-po').value||'').trim();
+  const ma=document.getElementById('dh-ma').value;
+  const sl=parseFloat(document.getElementById('dh-sl').value)||0;
+  const created=document.getElementById('dh-created').value||fISO(new Date());
+  const note=document.getElementById('dh-note').value||'';
+  if(!po){toast('Vui lòng nhập Mã đơn hàng!',true);return;}
+  if(!ma){toast('Vui lòng chọn thành phẩm!',true);return;}
+  if(sl<=0){toast('Số lượng đặt phải lớn hơn 0!',true);return;}
+  const p=products.find(x=>x.ma===ma);
+  if(editOrderId){
+    const o=orders.find(x=>x.id===editOrderId);
+    if(o){o.po=po;o.ma=ma;o.ten=p?p.ten:o.ten;o.sl=sl;o.created=created;o.note=note;}
+    toast('Đã cập nhật đơn hàng: '+po);
+  } else {
+    orders.push({id:genId(),po,ma,ten:p?p.ten:ma,sl,created,note});
+    toast('Đã thêm đơn hàng: '+po);
+  }
+  persist();closeModal('modal-order');renderOrders();
+}
+function delOrder(id){if(!requireAdmin())return;
+  const o=orders.find(x=>x.id===id);if(!o)return;
+  if(!confirm('Xóa đơn hàng "'+o.po+'"?\n\nThao tác không thể hoàn tác.'))return;
+  orders=orders.filter(x=>x.id!==id);
+  persist();renderOrders();
+  toast('Đã xóa đơn hàng: '+o.po);
+}
+function renderOrders(){
+  const bodyEl=document.getElementById('dh-body');if(!bodyEl)return;
+  const q=(document.getElementById('dh-srch')?.value||'').toLowerCase();
+  // Tổng sản lượng đã sản xuất theo từng mã TP (toàn bộ lịch sử)
+  const producedByMa={};
+  prodLog.forEach(l=>{producedByMa[l.ma]=(producedByMa[l.ma]||0)+l.sl;});
+  // Phân bổ FIFO: nhóm đơn hàng theo mã TP, sắp theo ngày tạo (cũ nhất trước)
+  const byMa={};
+  orders.forEach(o=>{(byMa[o.ma]=byMa[o.ma]||[]).push(o);});
+  const progress={}; // id -> {daChay, conLai, trangThai}
+  Object.keys(byMa).forEach(ma=>{
+    const list=[...byMa[ma]].sort((a,b)=>(a.created||'').localeCompare(b.created||'')||a.id.localeCompare(b.id));
+    let pool=producedByMa[ma]||0;
+    list.forEach(o=>{
+      const daChay=Math.min(o.sl,pool);
+      pool-=daChay;
+      const conLai=o.sl-daChay;
+      progress[o.id]={daChay,conLai,trangThai:conLai<=0?'done':(daChay>0?'running':'none')};
+    });
+  });
+  const stM={done:'<span class="sb sb-green">Hoàn thành</span>',running:'<span class="sb sb-amber">Đang chạy</span>',none:'<span class="sb sb-red">Chưa chạy</span>'};
+  const rows=orders.filter(o=>!q||(o.po+o.ma+o.ten).toLowerCase().includes(q));
+  bodyEl.innerHTML=rows.length?rows.map((o,i)=>{
+    const pr=progress[o.id]||{daChay:0,conLai:o.sl,trangThai:'none'};
+    return '<tr><td class="tc">'+(i+1)+'</td><td><div class="ma-code">'+o.po+'</div></td>'
+      +'<td><div class="ma-code">'+o.ma+'</div></td><td class="item-ten">'+o.ten+'</td>'
+      +'<td class="tr">'+fN(o.sl)+'</td>'
+      +'<td class="tr" style="color:#1e8449;font-weight:600">'+fN(pr.daChay)+'</td>'
+      +'<td class="tr" style="color:'+(pr.conLai>0?'#c0392b':'#999')+';font-weight:600">'+fN(pr.conLai)+'</td>'
+      +'<td class="tc">'+stM[pr.trangThai]+'</td>'
+      +'<td class="tc">'+(o.created||'')+'</td>'
+      +'<td class="tc" style="white-space:nowrap">'
+      +'<button onclick="openEditOrderModal(\''+o.id+'\')" style="background:none;border:none;cursor:pointer;color:#185FA5;font-size:15px;padding:2px 4px" title="Sửa">✏</button>'
+      +'<button onclick="delOrder(\''+o.id+'\')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:15px;padding:2px 4px" title="Xóa">🗑</button>'
+      +'</td></tr>';
+  }).join('') : '<tr><td colspan="10" style="text-align:center;padding:24px;color:#999">Chưa có đơn hàng nào.</td></tr>';
+  const done=orders.filter(o=>(progress[o.id]||{}).trangThai==='done').length;
+  const running=orders.filter(o=>(progress[o.id]||{}).trangThai==='running').length;
+  const remain=orders.reduce((s,o)=>s+((progress[o.id]||{conLai:o.sl}).conLai),0);
+  document.getElementById('dh-total').textContent=fN(orders.length);
+  document.getElementById('dh-running').textContent=fN(running);
+  document.getElementById('dh-done').textContent=fN(done);
+  document.getElementById('dh-remain').textContent=fN(remain);
+}
+
 // ── SẢN LƯỢNG SẢN XUẤT (tự động trừ linh kiện theo BOM) ───────────────────────
 function chDaySx(d){curDateSx=new Date(curDateSx);curDateSx.setDate(curDateSx.getDate()+d);document.getElementById('disp-date-sx').textContent=fDate(curDateSx);renderDaySx();}
 function goTodaySx(){curDateSx=new Date();document.getElementById('disp-date-sx').textContent=fDate(curDateSx);renderDaySx();}
@@ -1991,7 +2138,7 @@ function saveSx(){if(!requireAdmin())return;
   persist();
   closeModal('modal-sx');
   if(fISO(curDateSx)!==ds){curDateSx=new Date(ds+'T00:00:00');document.getElementById('disp-date-sx').textContent=fDate(curDateSx);}
-  renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();updateSummary();
+  renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();renderOrders();updateSummary();
   toast('🏭 Đã ghi nhận SX '+fN(sl)+' '+p.dvt+' — '+p.ten+' (đã tự trừ linh kiện tại '+LOC_LABELS[loc]+')'+(doanhthu?' | Doanh thu: '+fN(doanhthu)+'đ':''));
 }
 function renderDaySx(){
@@ -2044,7 +2191,7 @@ function editSxXuong(id){
   }
   r.xuong=newLoc;
   persist();
-  renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();updateSummary();
+  renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();renderOrders();updateSummary();
   toast('✅ Đã đổi xưởng sản xuất sang '+LOC_LABELS[newLoc]+', tự động chuyển lại linh kiện và tồn thành phẩm.');
 }
 function defectSummary(loi){
@@ -2066,7 +2213,7 @@ function delSx(id){if(!requireAdmin())return;
   });
   gdLog=gdLog.filter(x=>!(r.consumedIds||[]).includes(x.id));
   prodLog=prodLog.filter(x=>x.id!==id);
-  persist();renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();updateSummary();
+  persist();renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();renderOrders();updateSummary();
   toast('Đã xóa lượt sản xuất và hoàn lại linh kiện');
 }
 function exportSxCSV(){const ds=fISO(curDateSx),r=[['Giờ','Mã TP','Tên thành phẩm','ĐVT','SL sản xuất','Xưởng SX','Người TH','Tồn TP sau','Lỗi phát sinh','Ghi chú']];prodLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>r.push([l.time,l.ma,l.ten,l.dvt,l.sl,LOC_LABELS[l.xuong]||'Xưởng 1',l.nguoi||'',l.ton_sau,defectSummaryText(l.loi),l.note||'']));dlCSV(r,'sanluong-'+ds+'.csv');toast('Đã xuất CSV');}
@@ -2453,6 +2600,7 @@ function init(){
   updateSummary();
   renderDayGd();
   renderRq();
+  renderOrders();
   updateAdminUI();
   tryAutoLogin();
   initCloudSync();
