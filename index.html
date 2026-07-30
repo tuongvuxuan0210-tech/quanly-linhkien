@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quản Lý Linh Kiện Xe Cứu Hỏa — Xưởng Hải Tân 2</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#f4f6f8}
@@ -266,6 +267,23 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   </div>
 </div>
 
+<!-- MODAL CẦN HÀNG (nhật ký in tem từ trạm cân) -->
+<div class="modal-overlay" id="modal-canhang">
+  <div class="modal-box" style="max-width:640px">
+    <h3>Nhập Cần Hàng (nhật ký in tem) <button onclick="closeModal(&#39;modal-canhang&#39;)">✕</button></h3>
+    <div class="info-box">ℹ File Excel/CSV xuất từ trạm cân (cột: Ma hang, Ten hang, So luong, Nhập Xưởng...). Số lượng tự tách bỏ phần "(x tem)", Xưởng tự lấy từ cột "Nhập Xưởng" — các dòng cùng Mã hàng + Xưởng được <b>cộng dồn</b> thành 1 giao dịch nhập kho.</div>
+    <div class="drop-zone" id="canhang-drop-zone" onclick="document.getElementById(&#39;canhang-file-in&#39;).click()">
+      ⬆ Kéo thả file Cần Hàng (.xlsx, .csv) vào đây hoặc bấm để chọn file
+    </div>
+    <input type="file" id="canhang-file-in" accept=".xlsx,.xls,.csv,.txt" style="display:none" onchange="handleCanHangFile(this)">
+    <div id="canhang-preview"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal(&#39;modal-canhang&#39;)">Hủy</button>
+      <button class="btn btn-red" id="btn-ok-canhang" style="display:none" onclick="confirmCanHang()">✓ Xác nhận nhập kho</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL SẢN PHẨM / ĐỊNH MỨC BOM -->
 <div class="modal-overlay" id="modal-product">
   <div class="modal-box" style="max-width:640px">
@@ -511,6 +529,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <select id="tk-st" onchange="renderTonKho()"><option value="">Tất cả</option><option value="low">Thiếu hàng</option><option value="warn">Sắp hết</option><option value="ok">Đủ hàng</option></select>
     <button class="btn" onclick="exportTKCSV()">⬇ CSV</button>
     <button class="btn btn-blue" onclick="exportTKPDF()">📄 PDF</button>
+    <button class="btn btn-red" onclick="openModal('modal-canhang')">⬆ Nhập Cần Hàng</button>
   </div>
   <div class="tbl-wrap">
     <table><thead><tr>
@@ -2583,6 +2602,131 @@ document.getElementById('drop-zone') && document.getElementById('drop-zone').add
   e.preventDefault();const f=e.dataTransfer.files[0];if(f)processCSV(f);
 });
 document.getElementById('drop-zone') && document.getElementById('drop-zone').addEventListener('dragover',e=>e.preventDefault());
+
+// ── IMPORT CẦN HÀNG (nhật ký in tem từ trạm cân) ───────────────────────────────
+let canHangBuf=[];
+function splitCSVLine(line){
+  const out=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){ if(inQ && line[i+1]==='"'){cur+='"';i++;} else inQ=!inQ; }
+    else if(c===',' && !inQ){out.push(cur);cur='';}
+    else cur+=c;
+  }
+  out.push(cur);
+  return out.map(s=>s.trim());
+}
+function parseSoLuong(raw){
+  if(raw===undefined||raw===null||raw==='')return 0;
+  const head=String(raw).split('(')[0].trim();
+  const digits=head.replace(/[^\d]/g,'');
+  return parseInt(digits||'0',10);
+}
+function mapXuong(raw){
+  if(raw===undefined||raw===null||raw==='')return null;
+  const s=String(raw).trim().toLowerCase();
+  if(s==='1'||s==='x1'||s.includes('xưởng 1')||s.includes('xuong 1'))return 'x1';
+  if(s==='2'||s==='x2'||s.includes('xưởng 2')||s.includes('xuong 2'))return 'x2';
+  return null;
+}
+function handleCanHangFile(input){if(input.files[0])processCanHangFile(input.files[0]);}
+function processCanHangFile(file){
+  const name=(file.name||'').toLowerCase();
+  if(name.endsWith('.xlsx')||name.endsWith('.xls')){
+    const reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:false});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
+        buildCanHangFromRows(rows);
+      }catch(err){toast('Không đọc được file Excel!',true);}
+    };
+    reader.readAsArrayBuffer(file);
+  }else{
+    const reader=new FileReader();
+    reader.onload=function(e){
+      let text=e.target.result;
+      if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+      const lines=text.split(/\r?\n/).filter(l=>l.trim());
+      buildCanHangFromRows(lines.map(l=>splitCSVLine(l)));
+    };
+    reader.readAsText(file,'UTF-8');
+  }
+}
+function buildCanHangFromRows(rows){
+  if(!rows||rows.length<2){toast('File không hợp lệ!',true);return;}
+  const hdr=rows[0].map(h=>String(h||'').trim().toLowerCase());
+  const iMa=hdr.indexOf('ma hang'),iTen=hdr.indexOf('ten hang'),iSl=hdr.indexOf('so luong'),iDon=hdr.indexOf('so don hang');
+  const iXu=hdr.findIndex(h=>h==='nhập xưởng'||h==='nhap xuong');
+  if(iMa<0||iTen<0||iSl<0){toast('File thiếu cột "Ma hang", "Ten hang" hoặc "So luong"!',true);return;}
+  const map={};
+  for(let i=1;i<rows.length;i++){
+    const c=rows[i];
+    const ma=String(c[iMa]||'').trim();
+    if(!ma)continue;
+    const ten=String(c[iTen]||'').trim();
+    const sl=parseSoLuong(c[iSl]);
+    const don=iDon>=0?String(c[iDon]||'').trim():'';
+    const xuong=iXu>=0?mapXuong(c[iXu]):null;
+    const key=ma+'__'+(xuong||'auto');
+    if(!map[key])map[key]={ma,ten,sl:0,count:0,orders:new Set(),xuong:xuong||'x1',auto:!!xuong};
+    map[key].sl+=sl;map[key].count++;
+    if(don)map[key].orders.add(don);
+  }
+  canHangBuf=Object.values(map).map(r=>{
+    const it=items.find(x=>x.ma===r.ma);
+    return {ma:r.ma,ten:it?it.ten:r.ten,dvt:it?it.dvt:'',sl:r.sl,count:r.count,orders:[...r.orders],found:!!it,xuong:r.xuong,auto:r.auto};
+  }).sort((a,b)=>a.ma===b.ma?(a.xuong<b.xuong?-1:1):a.ma.localeCompare(b.ma));
+  renderCanHangPreview();
+}
+function renderCanHangPreview(){
+  const prev=document.getElementById('canhang-preview');
+  if(!canHangBuf.length){prev.innerHTML='';document.getElementById('btn-ok-canhang').style.display='none';return;}
+  const foundCount=canHangBuf.filter(r=>r.found).length;
+  const missCount=canHangBuf.length-foundCount;
+  const autoCount=canHangBuf.filter(r=>r.auto).length;
+  prev.innerHTML='<div style="padding:5px 0;font-size:11px;color:#666">Tìm thấy <b style="color:#1e8449">'+canHangBuf.length+'</b> dòng'
+    +(autoCount?' — <b style="color:#185FA5">'+autoCount+'</b> dòng đã tự nhận xưởng từ file':'')
+    +(missCount?' — <b style="color:#c0392b">'+missCount+'</b> mã không có trong danh mục (sẽ bỏ qua)':'')+':</div>'
+    +'<table style="width:100%;border-collapse:collapse;margin-top:4px"><thead><tr>'
+    +['Mã hàng','Tên hàng','Tổng SL','Lượt','Xưởng nhận'].map(h=>'<th style="background:#c0392b;color:#fff;padding:4px 6px;font-size:10px;text-align:left">'+h+'</th>').join('')
+    +'</tr></thead><tbody>'
+    +canHangBuf.map((r,i)=>'<tr style="'+(!r.found?'opacity:.5':'')+'">'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ma+(!r.found?' <span style="color:#c0392b">(không có)</span>':'')+'</td>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ten.slice(0,30)+'</td>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+fN(r.sl)+'</td>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:center">'+r.count+'</td>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'
+        +(r.found?'<select class="cit" onchange="updCanHangXuong('+i+',this.value)"><option value="x1"'+(r.xuong==='x1'?' selected':'')+'>Xưởng 1</option><option value="x2"'+(r.xuong==='x2'?' selected':'')+'>Xưởng 2</option></select>'+(r.auto?' <span style="color:#185FA5;font-size:9px">(tự động)</span>':' <span style="color:#b7770d;font-size:9px">(chọn tay)</span>'):'—')
+      +'</td></tr>').join('')
+    +'</tbody></table>';
+  document.getElementById('btn-ok-canhang').style.display=foundCount?'inline-flex':'none';
+}
+function updCanHangXuong(i,v){canHangBuf[i].xuong=v;}
+function confirmCanHang(){
+  if(!requireAdmin())return;
+  const now=new Date(),ds=fISO(now),time=now.toTimeString().slice(0,5);
+  let added=0,missed=0;
+  canHangBuf.forEach(r=>{
+    const it=items.find(x=>x.ma===r.ma);
+    if(!r.found||!it){missed++;return;}
+    migrateItemTon(it);
+    const loc=r.xuong;
+    it.ton[loc]=(it.ton[loc]||0)+r.sl;
+    gdLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,type:'nhap',sl:r.sl,loc,from:'Cần Hàng ngày'+(r.orders.length?' — Đơn: '+r.orders.join(', '):''),nguoi:'',ton_sau:getTon(it,loc),note:'Nhập tự động từ file Cần Hàng ('+r.count+' lượt)'});
+    added++;
+  });
+  persist();closeModal('modal-canhang');renderTonKho();renderDayGd();updateSummary();
+  document.getElementById('canhang-preview').innerHTML='';
+  document.getElementById('btn-ok-canhang').style.display='none';
+  canHangBuf=[];
+  toast('Đã nhập '+added+' mã hàng từ file Cần Hàng'+(missed?', bỏ qua '+missed+' mã không có trong danh mục':''));
+}
+document.getElementById('canhang-drop-zone') && document.getElementById('canhang-drop-zone').addEventListener('drop',function(e){
+  e.preventDefault();const f=e.dataTransfer.files[0];if(f)processCanHangFile(f);
+});
+document.getElementById('canhang-drop-zone') && document.getElementById('canhang-drop-zone').addEventListener('dragover',e=>e.preventDefault());
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 function init(){
