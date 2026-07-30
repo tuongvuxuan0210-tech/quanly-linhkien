@@ -1818,13 +1818,14 @@ function buildQtyCompareSVG(labels,planArr,actualArr){
     +'<rect x="76" y="0" width="10" height="10" fill="#185FA5"/><text x="90" y="9" font-size="9" fill="#555">Thực tế</text>'
     +'</g></svg>';
 }
+function fISOLocal(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function renderOverviewCharts(){
   const revEl=document.getElementById('tq-revenue-chart'),qtyEl=document.getElementById('tq-qty-chart');
   if(!revEl||!qtyEl)return;
   const today=new Date();
   const first=new Date(today.getFullYear(),today.getMonth(),1);
   const daysInRange=[];
-  for(let d=new Date(first);d<=today;d.setDate(d.getDate()+1)){daysInRange.push(fISO(d));}
+  for(let d=new Date(first);d<=today;d.setDate(d.getDate()+1)){daysInRange.push(fISOLocal(d));}
   if(!daysInRange.length){revEl.innerHTML=qtyEl.innerHTML='<div style="padding:24px;text-align:center;color:#999">Chưa có dữ liệu.</div>';return;}
   const labels=daysInRange.map(ds=>{const p=ds.split('-');return p[2]+'/'+p[1];});
   const actualRevenue=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>{
@@ -3009,7 +3010,7 @@ function chKhMatrix(dir){
   const d=new Date(curPlanDate+'T00:00:00');
   if(khViewMode==='tuan')d.setDate(d.getDate()+7*dir);
   else d.setMonth(d.getMonth()+dir);
-  curPlanDate=fISO(d);
+  curPlanDate=fISOLocal(d);
   document.getElementById('kh-date').value=curPlanDate;
   renderKhMatrix();
 }
@@ -3022,12 +3023,12 @@ function renderKhMatrix(){
   const anchor=new Date(curPlanDate+'T00:00:00');
   let days=[];
   if(khViewMode==='tuan'){
-    for(let i=0;i<7;i++){const d=new Date(anchor);d.setDate(d.getDate()+i);days.push(fISO(d));}
+    for(let i=0;i<7;i++){const d=new Date(anchor);d.setDate(d.getDate()+i);days.push(fISOLocal(d));}
     document.getElementById('kh-matrix-label').textContent='Tuần: '+fDate(new Date(days[0]+'T00:00:00'))+' → '+fDate(new Date(days[6]+'T00:00:00'));
   }else{
     const first=new Date(anchor.getFullYear(),anchor.getMonth(),1);
     const last=new Date(anchor.getFullYear(),anchor.getMonth()+1,0);
-    for(let d=new Date(first);d<=last;d.setDate(d.getDate()+1)){days.push(fISO(d));}
+    for(let d=new Date(first);d<=last;d.setDate(d.getDate()+1)){days.push(fISOLocal(d));}
     document.getElementById('kh-matrix-label').textContent='Tháng '+(anchor.getMonth()+1)+'/'+anchor.getFullYear();
   }
   // Gom các mã thành phẩm có kế hoạch (sl>0) trong khoảng ngày này
