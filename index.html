@@ -424,6 +424,49 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   </div>
 </div>
 
+<!-- MODAL GHI NHẬN HÀNG TRẢ VỀ -->
+<div class="modal-overlay" id="modal-tv">
+  <div class="modal-box">
+    <h3>Ghi nhận hàng trả về <button onclick="closeModal(&#39;modal-tv&#39;)">✕</button></h3>
+    <div class="frow full">
+      <div class="ff">
+        <label>Thành phẩm <span style="color:#c0392b">*</span></label>
+        <select id="mtv-ma" onchange="onPickSPTv()">
+          <option value="">-- Chọn thành phẩm --</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="ff"><label>Số lượng <span style="color:#c0392b">*</span></label><input id="mtv-sl" type="number" min="1" value="1"></div>
+      <div class="ff"><label>Ngày nhận trả về <span style="color:#c0392b">*</span></label><input id="mtv-ngay" type="date"></div>
+    </div>
+    <div class="frow full"><div class="ff"><label>Khách hàng</label><input id="mtv-kh" placeholder="Tên khách hàng..."></div></div>
+    <div class="frow full"><div class="ff"><label>Lỗi / Lý do trả về <span style="color:#c0392b">*</span></label><input id="mtv-lydo" placeholder="VD: Nứt vỏ, sai màu sơn, lắp lỗi cảm biến..."></div></div>
+    <div class="frow full"><div class="ff"><label>Người nhận</label><input id="mtv-nguoinhan" placeholder="Tên nhân viên nhận hàng..."></div></div>
+    <div class="frow full"><div class="ff"><label>Ghi chú</label><input id="mtv-note" placeholder="Tuỳ chọn..."></div></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal(&#39;modal-tv&#39;)">Hủy</button>
+      <button class="btn btn-red" onclick="saveTv()">✓ Lưu – Nhận hàng trả về</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL XÁC NHẬN ĐÃ XUẤT TRẢ -->
+<div class="modal-overlay" id="modal-tv-xuat">
+  <div class="modal-box">
+    <h3>Xác nhận xuất trả khách hàng <button onclick="closeModal(&#39;modal-tv-xuat&#39;)">✕</button></h3>
+    <div class="frow">
+      <div class="ff"><label>Ngày xuất trả <span style="color:#c0392b">*</span></label><input id="mtvx-ngay" type="date"></div>
+      <div class="ff"><label>Người giao</label><input id="mtvx-nguoi" placeholder="Tên nhân viên giao hàng..."></div>
+    </div>
+    <div class="frow full"><div class="ff"><label>Ghi chú xuất trả</label><input id="mtvx-note" placeholder="Tuỳ chọn..."></div></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal(&#39;modal-tv-xuat&#39;)">Hủy</button>
+      <button class="btn btn-green" onclick="confirmTvXuat()">✓ Xác nhận đã xuất trả</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOPBAR -->
 <div class="topbar">
   <span style="font-size:18px">🚒</span>
@@ -449,6 +492,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div class="tab" onclick="switchTab(&#39;dt&#39;)">💰 Doanh Thu</div>
   <div class="tab" onclick="switchTab(&#39;dh&#39;)">📦 Đơn Hàng</div>
   <div class="tab" onclick="switchTab(&#39;xh&#39;)">🚚 Xuất Hàng TP</div>
+  <div class="tab" onclick="switchTab(&#39;tv&#39;)">🔧 Hàng Trả Về</div>
   <div class="tab" onclick="switchTab(&#39;kh&#39;)">📋 Kế Hoạch SX</div>
   <div class="tab" onclick="switchTab(&#39;rq&#39;)">📋 Phiếu Request</div>
   <div class="tab" onclick="switchTab(&#39;ls&#39;)">🕐 Lịch Sử</div>
@@ -857,6 +901,31 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div style="font-size:11px;color:#999;margin-top:4px" id="xh-count">Hiển thị 0 lượt ghi nhận trong ngày 2026-07-21</div>
 </div>
 
+<!-- HÀNG TRẢ VỀ (khách hàng trả lại do lỗi, chờ sửa rồi xuất trả — không liên quan tồn kho linh kiện) -->
+<div class="pg" id="pg-tv">
+  <div class="toolbar">
+    <input type="text" id="tv-srch" placeholder="Tìm mã, tên TP, khách hàng..." oninput="renderTV()" style="flex:1;min-width:150px">
+    <select id="tv-st" onchange="renderTV()">
+      <option value="">Tất cả trạng thái</option>
+      <option value="dangxuly">Đang xử lý</option>
+      <option value="daxuattra">Đã xuất trả</option>
+    </select>
+    <button class="btn btn-red" onclick="openTvModal()">+ Ghi nhận hàng trả về</button>
+    <button class="btn" onclick="exportTvCSV()">⬇ CSV</button>
+    <button class="btn btn-blue" onclick="exportTvPDF()">📄 PDF</button>
+  </div>
+  <div class="info-box">ℹ Theo dõi thành phẩm khách hàng trả về do lỗi để sửa rồi xuất trả lại. Mục này <b>chỉ để theo dõi</b>, không trừ/cộng tồn kho linh kiện hay thành phẩm.</div>
+  <div class="tbl-wrap">
+    <table><thead><tr>
+      <th style="width:34px">STT</th><th>Ngày nhận</th>
+      <th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th>
+      <th>SL</th><th>ĐVT</th><th class="tl">Khách hàng</th><th class="tl">Lỗi/Lý do trả về</th><th>Người nhận</th>
+      <th>Trạng thái</th><th>Ngày xuất trả</th><th>Người giao</th><th class="tl">Ghi chú</th><th style="width:70px"></th>
+    </tr></thead><tbody id="tv-body"><tr><td colspan="14" style="text-align:center;padding:32px;color:#999"><div style="font-size:28px;margin-bottom:8px">🔧</div>Chưa có hàng trả về nào được ghi nhận.<br><span style="font-size:11px">Bấm <b>+ Ghi nhận hàng trả về</b> để nhập.</span></td></tr></tbody></table>
+  </div>
+  <div style="font-size:11px;color:#999;margin-top:4px" id="tv-count">Hiển thị 0 / 0 lượt</div>
+</div>
+
 <!-- KẾ HOẠCH SẢN XUẤT -->
 <div class="pg" id="pg-kh">
   <div class="day-header">
@@ -978,6 +1047,7 @@ let curDateXh=new Date();
 let curDateCp=new Date();
 let curMonthDt=new Date();curMonthDt.setDate(1);
 let orders=loadJ('orders',[]);
+let returnLog=loadJ('returnlog',[]);
 let defectCats=loadJ('defectcats',JSON.parse(JSON.stringify(DFLT_DEFECT_CATS)));
 let planData=loadJ('plandata',{});
 function tomorrowISO(){const d=new Date();d.setDate(d.getDate()+1);return fISO(d);}
@@ -1069,7 +1139,7 @@ function updateAdminUI(){
   else{el.textContent='🔒 Chưa đăng nhập';el.onclick=showLoginGate;el.style.cursor='pointer';el.style.background='rgba(255,255,255,.15)';}
 }
 
-function persist(){sSet('items',JSON.stringify(items));sSet('gdlog',JSON.stringify(gdLog));sSet('rq',JSON.stringify(rqRows));sSet('rqc',rqCtr);sSet('products',JSON.stringify(products));sSet('prodlog',JSON.stringify(prodLog));sSet('shiplog',JSON.stringify(shipLog));sSet('alloclog',JSON.stringify(allocLog));sSet('defectcats',JSON.stringify(defectCats));sSet('plandata',JSON.stringify(planData));sSet('orders',JSON.stringify(orders));if(!suppressCloudPush)pushCloud();}
+function persist(){sSet('items',JSON.stringify(items));sSet('gdlog',JSON.stringify(gdLog));sSet('rq',JSON.stringify(rqRows));sSet('rqc',rqCtr);sSet('products',JSON.stringify(products));sSet('prodlog',JSON.stringify(prodLog));sSet('shiplog',JSON.stringify(shipLog));sSet('alloclog',JSON.stringify(allocLog));sSet('defectcats',JSON.stringify(defectCats));sSet('plandata',JSON.stringify(planData));sSet('orders',JSON.stringify(orders));sSet('returnlog',JSON.stringify(returnLog));if(!suppressCloudPush)pushCloud();}
 
 // ── ĐỒNG BỘ DỮ LIỆU ĐÁM MÂY (nhiều máy dùng chung 1 dữ liệu, real-time) ──────
 // Dùng Firebase Realtime Database qua REST API + Server-Sent Events (không cần SDK).
@@ -1087,7 +1157,7 @@ function setCloudStatus(state){
 }
 
 function collectState(){
-  return {items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,allocLog,defectCats,planData,orders,_ts:Date.now()};
+  return {items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,allocLog,defectCats,planData,orders,returnLog,_ts:Date.now()};
 }
 
 function pushCloud(){
@@ -1126,11 +1196,12 @@ function applyCloudState(state){
   defectCats=state.defectCats||defectCats;
   planData=state.planData||planData;
   orders=state.orders||orders;
+  returnLog=state.returnLog||returnLog;
   persist(); // chỉ lưu cache máy này, không đẩy ngược lên cloud (suppressCloudPush đang bật)
   suppressCloudPush=false;
   // Vẽ lại toàn bộ giao diện đang có để phản ánh dữ liệu mới nhất
   updateSummary();
-  renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDoanhThu();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();renderOrders();
+  renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDoanhThu();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();renderOrders();renderTV();
   // Chỉ hiện thông báo tối đa 1 lần mỗi 4 giây — tránh dồn dập thông báo/nháy màn hình
   // khi nhiều máy trong xưởng cùng lưu dữ liệu liên tiếp trong thời gian ngắn
   const nowTs=Date.now();
@@ -1199,7 +1270,7 @@ function applyPendingCloudUpdate(){
 function exportBackup(){
   const data={
     __meta:{app:'assembly_control',exported_at:new Date().toISOString(),version:1},
-    items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,defectCats,orders
+    items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,defectCats,orders,returnLog
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -1228,10 +1299,11 @@ function importBackup(file){if(!requireAdmin())return;
     shipLog=data.shipLog||[];
     defectCats=data.defectCats||defectCats;
     orders=data.orders||[];
+    returnLog=data.returnLog||[];
     persist();
     document.getElementById('backup-file-input').value='';
     switchTab('tq');
-    renderTonKho();renderDayGd();renderDM();renderSP();renderDaySx();renderDayXh();renderOrders();updateSummary();
+    renderTonKho();renderDayGd();renderDM();renderSP();renderDaySx();renderDayXh();renderOrders();updateSummary();renderTV();
     toast('✅ Đã nhập dữ liệu thành công từ file sao lưu!');
   };
   reader.onerror=function(){toast('Không đọc được file!',true);};
@@ -1290,7 +1362,7 @@ function switchTab(id){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('pg-'+id).classList.add('active');
-  const tabs=['tq','nx','tk','cp','bom','sx','dt','dh','xh','kh','rq','ls','dm'];
+  const tabs=['tq','nx','tk','cp','bom','sx','dt','dh','xh','tv','kh','rq','ls','dm'];
   document.querySelectorAll('.tab')[tabs.indexOf(id)].classList.add('active');
   if(id==='tq')updateSummary();
   if(id==='ls')renderHis();
@@ -1303,6 +1375,7 @@ function switchTab(id){
   if(id==='dt'){document.getElementById('disp-month-dt').textContent=fMonthLabel(curMonthDt);renderDoanhThu();}
   if(id==='dh')renderOrders();
   if(id==='xh'){document.getElementById('disp-date-xh').textContent=fDate(curDateXh);renderDayXh();}
+  if(id==='tv')renderTV();
   if(id==='kh'){document.getElementById('kh-date').value=curPlanDate;renderKhRows();renderKhShortage();}
 }
 
@@ -2328,6 +2401,122 @@ function delXh(id){if(!requireAdmin())return;
 function exportXhCSV(){const ds=fISO(curDateXh),r=[['Giờ','Mã TP','Tên thành phẩm','ĐVT','SL xuất','Xuất từ xưởng','Xuất đến','Người TH','Tồn TP còn lại','Ghi chú']];shipLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>r.push([l.time,l.ma,l.ten,l.dvt,l.sl,LOC_LABELS[l.xuong]||'Xưởng 1',l.to||'',l.nguoi||'',l.ton_sau,l.note||'']));dlCSV(r,'xuathang-'+ds+'.csv');toast('Đã xuất CSV');}
 function exportXhPDF(){const ds=fISO(curDateXh);const rows=shipLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).map((l,i)=>'<tr><td>'+(i+1)+'</td><td>'+l.time+'</td><td style="font-size:9px">'+l.ma+'</td><td>'+l.ten+'</td><td>−'+fN(l.sl)+' '+l.dvt+'</td><td>'+(LOC_LABELS[l.xuong]||'Xưởng 1')+'</td><td>'+(l.to||'—')+'</td><td>'+(l.nguoi||'—')+'</td><td>'+fN(l.ton_sau)+'</td><td>'+(l.note||'')+'</td></tr>').join('');openPDF(buildPDF('NHẬT KÝ XUẤT HÀNG THÀNH PHẨM — XƯỞNG HẢI TÂN 2','Ngày: '+ds,'<table><thead><tr><th>STT</th><th>Giờ</th><th>Mã TP</th><th>Tên</th><th>SL xuất</th><th>Xưởng xuất</th><th>Xuất đến</th><th>Người TH</th><th>Tồn còn lại</th><th>Ghi chú</th></tr></thead><tbody>'+rows+'</tbody></table>'));}
 
+// ── HÀNG TRẢ VỀ (khách hàng trả lại do lỗi — chỉ theo dõi, KHÔNG đụng tồn kho) ──
+let editTvId=null;
+function tvProductOptions(selMa){
+  return '<option value="">-- Chọn thành phẩm --</option>'+products.map(p=>'<option value="'+p.ma+'"'+(p.ma===selMa?' selected':'')+'>['+p.ma+'] '+p.ten+'</option>').join('');
+}
+function openTvModal(){if(!requireAdmin())return;
+  if(!products.length){toast('Chưa có thành phẩm nào! Vào tab "Định Mức BOM" để khai báo trước.',true);return;}
+  editTvId=null;
+  document.getElementById('mtv-ma').innerHTML=tvProductOptions('');
+  document.getElementById('mtv-sl').value=1;
+  document.getElementById('mtv-ngay').value=fISO(new Date());
+  document.getElementById('mtv-kh').value='';
+  document.getElementById('mtv-lydo').value='';
+  document.getElementById('mtv-nguoinhan').value='';
+  document.getElementById('mtv-note').value='';
+  openModal('modal-tv');
+  setTimeout(()=>document.getElementById('mtv-ma').focus(),200);
+}
+function onPickSPTv(){} // giữ chỗ tương lai (chưa cần info-bar vì không đụng tồn kho)
+function saveTv(){if(!requireAdmin())return;
+  const ma=document.getElementById('mtv-ma').value;
+  const sl=parseFloat(document.getElementById('mtv-sl').value)||0;
+  const ngay=document.getElementById('mtv-ngay').value||fISO(new Date());
+  const kh=document.getElementById('mtv-kh').value.trim();
+  const lydo=document.getElementById('mtv-lydo').value.trim();
+  const nguoinhan=document.getElementById('mtv-nguoinhan').value.trim();
+  const note=document.getElementById('mtv-note').value.trim();
+  if(!ma){toast('Vui lòng chọn thành phẩm!',true);return;}
+  if(sl<=0){toast('Số lượng phải lớn hơn 0!',true);return;}
+  if(!lydo){toast('Vui lòng nhập lỗi / lý do trả về!',true);return;}
+  const p=products.find(x=>x.ma===ma);
+  returnLog.push({id:genId(),ma,ten:p?p.ten:ma,dvt:p?p.dvt:'',sl,ngayNhan:ngay,khachHang:kh,lyDo:lydo,nguoiNhan:nguoinhan,note,status:'dangxuly',ngayXuat:'',nguoiGiao:'',noteXuat:''});
+  persist();closeModal('modal-tv');renderTV();
+  toast('✅ Đã ghi nhận hàng trả về — '+fN(sl)+' '+(p?p.dvt:'')+' '+(p?p.ten:ma));
+}
+function openTvXuatModal(id){if(!requireAdmin())return;
+  editTvId=id;
+  document.getElementById('mtvx-ngay').value=fISO(new Date());
+  document.getElementById('mtvx-nguoi').value='';
+  document.getElementById('mtvx-note').value='';
+  openModal('modal-tv-xuat');
+}
+function confirmTvXuat(){if(!requireAdmin())return;
+  const r=returnLog.find(x=>x.id===editTvId);if(!r)return;
+  const ngay=document.getElementById('mtvx-ngay').value||fISO(new Date());
+  const nguoi=document.getElementById('mtvx-nguoi').value.trim();
+  const note=document.getElementById('mtvx-note').value.trim();
+  r.status='daxuattra';r.ngayXuat=ngay;r.nguoiGiao=nguoi;r.noteXuat=note;
+  persist();closeModal('modal-tv-xuat');renderTV();
+  toast('🚚 Đã đánh dấu xuất trả — '+r.ten);
+}
+function reopenTv(id){if(!requireAdmin())return;
+  const r=returnLog.find(x=>x.id===id);if(!r)return;
+  if(!confirm('Chuyển lại "'+r.ten+'" về trạng thái Đang xử lý?'))return;
+  r.status='dangxuly';r.ngayXuat='';r.nguoiGiao='';r.noteXuat='';
+  persist();renderTV();
+  toast('Đã chuyển lại trạng thái Đang xử lý');
+}
+function delTv(id){if(!requireAdmin())return;
+  const r=returnLog.find(x=>x.id===id);if(!r)return;
+  if(!confirm('Xóa bản ghi hàng trả về?\n'+r.ten+' — '+fN(r.sl)+' '+r.dvt+' (KH: '+(r.khachHang||'—')+')'))return;
+  returnLog=returnLog.filter(x=>x.id!==id);
+  persist();renderTV();
+  toast('Đã xóa bản ghi hàng trả về');
+}
+function tvStatusBadge(st){
+  return st==='daxuattra'
+    ?'<span class="sb sb-green">✓ Đã xuất trả</span>'
+    :'<span class="sb sb-amber">⏳ Đang xử lý</span>';
+}
+function renderTV(){
+  const q=(document.getElementById('tv-srch').value||'').toLowerCase().trim();
+  const stF=document.getElementById('tv-st').value;
+  let list=returnLog.filter(r=>{
+    if(stF && r.status!==stF)return false;
+    if(q && !((r.ma||'').toLowerCase().includes(q)||(r.ten||'').toLowerCase().includes(q)||(r.khachHang||'').toLowerCase().includes(q)))return false;
+    return true;
+  }).sort((a,b)=>b.ngayNhan.localeCompare(a.ngayNhan));
+  const body=document.getElementById('tv-body');
+  if(!list.length){
+    body.innerHTML='<tr><td colspan="14" style="text-align:center;padding:32px;color:#999"><div style="font-size:28px;margin-bottom:8px">🔧</div>Chưa có hàng trả về nào phù hợp.</td></tr>';
+  }else{
+    body.innerHTML=list.map((r,i)=>'<tr>'
+      +'<td class="tc">'+(i+1)+'</td>'
+      +'<td class="tc">'+r.ngayNhan+'</td>'
+      +'<td><div class="ma-code">'+r.ma+'</div></td>'
+      +'<td class="item-ten">'+r.ten+'</td>'
+      +'<td class="tr" style="font-weight:700">'+fN(r.sl)+'</td>'
+      +'<td class="tc">'+r.dvt+'</td>'
+      +'<td>'+(r.khachHang||'<span style="color:#ccc">—</span>')+'</td>'
+      +'<td>'+r.lyDo+'</td>'
+      +'<td class="tc">'+(r.nguoiNhan||'<span style="color:#ccc">—</span>')+'</td>'
+      +'<td class="tc">'+tvStatusBadge(r.status)+'</td>'
+      +'<td class="tc">'+(r.ngayXuat||'<span style="color:#ccc">—</span>')+'</td>'
+      +'<td class="tc">'+(r.nguoiGiao||'<span style="color:#ccc">—</span>')+'</td>'
+      +'<td style="color:#888;font-size:11px">'+(r.note||'')+(r.noteXuat?' <i style="color:#1e8449">('+r.noteXuat+')</i>':'')+'</td>'
+      +'<td class="tc">'
+        +(r.status==='dangxuly'
+          ?'<button onclick="openTvXuatModal(\''+r.id+'\')" title="Đánh dấu đã xuất trả" style="background:none;border:none;cursor:pointer;color:#1e8449;font-size:14px">🚚</button>'
+          :'<button onclick="reopenTv(\''+r.id+'\')" title="Mở lại (chưa xuất trả)" style="background:none;border:none;cursor:pointer;color:#b7770d;font-size:14px">↩</button>')
+        +'<button onclick="delTv(\''+r.id+'\')" title="Xóa" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px">🗑</button>'
+      +'</td>'
+      +'</tr>').join('');
+  }
+  document.getElementById('tv-count').textContent='Hiển thị '+list.length+' / '+returnLog.length+' lượt';
+}
+function exportTvCSV(){
+  const r=[['Ngày nhận','Mã TP','Tên thành phẩm','SL','ĐVT','Khách hàng','Lỗi/Lý do trả về','Người nhận','Trạng thái','Ngày xuất trả','Người giao','Ghi chú']];
+  returnLog.slice().sort((a,b)=>a.ngayNhan.localeCompare(b.ngayNhan)).forEach(l=>r.push([l.ngayNhan,l.ma,l.ten,l.sl,l.dvt,l.khachHang||'',l.lyDo||'',l.nguoiNhan||'',l.status==='daxuattra'?'Đã xuất trả':'Đang xử lý',l.ngayXuat||'',l.nguoiGiao||'',l.note||'']));
+  dlCSV(r,'hangtraove-'+fISO(new Date())+'.csv');toast('Đã xuất CSV');
+}
+function exportTvPDF(){
+  const rows=returnLog.slice().sort((a,b)=>a.ngayNhan.localeCompare(b.ngayNhan)).map((l,i)=>'<tr><td>'+(i+1)+'</td><td>'+l.ngayNhan+'</td><td style="font-size:9px">'+l.ma+'</td><td>'+l.ten+'</td><td>'+fN(l.sl)+' '+l.dvt+'</td><td>'+(l.khachHang||'—')+'</td><td>'+(l.lyDo||'')+'</td><td>'+(l.nguoiNhan||'—')+'</td><td>'+(l.status==='daxuattra'?'Đã xuất trả':'Đang xử lý')+'</td><td>'+(l.ngayXuat||'—')+'</td><td>'+(l.nguoiGiao||'—')+'</td></tr>').join('');
+  openPDF(buildPDF('NHẬT KÝ HÀNG TRẢ VỀ — XƯỞNG HẢI TÂN 2','Tổng: '+returnLog.length+' lượt | Ngày: '+fISO(new Date()),'<table><thead><tr><th>STT</th><th>Ngày nhận</th><th>Mã TP</th><th>Tên</th><th>SL</th><th>Khách hàng</th><th>Lỗi/Lý do</th><th>Người nhận</th><th>Trạng thái</th><th>Ngày xuất trả</th><th>Người giao</th></tr></thead><tbody>'+rows+'</tbody></table>'));
+}
+
 // ── EXPORT ────────────────────────────────────────────────────────────────────
 // ── KẾ HOẠCH SẢN XUẤT & TÍNH THIẾU LINH KIỆN ─────────────────────────────────
 function getPlanRows(){return planData[curPlanDate]||[];}
@@ -2745,6 +2934,7 @@ function init(){
   renderDayGd();
   renderRq();
   renderOrders();
+  renderTV();
   updateAdminUI();
   tryAutoLogin();
   initCloudSync();
