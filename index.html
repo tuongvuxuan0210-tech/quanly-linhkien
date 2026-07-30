@@ -424,6 +424,48 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   </div>
 </div>
 
+<!-- MODAL CHUYỂN KHO TP (giữa Xưởng 1 ↔ Xưởng 2) -->
+<div class="modal-overlay" id="modal-nktp">
+  <div class="modal-box">
+    <h3>Ghi nhận chuyển kho thành phẩm <button onclick="closeModal(&#39;modal-nktp&#39;)">✕</button></h3>
+    <div class="frow full">
+      <div class="ff">
+        <label>Thành phẩm <span style="color:#c0392b">*</span></label>
+        <select id="mnktp-ma" onchange="onPickNktp()">
+          <option value="">-- Chọn thành phẩm --</option>
+        </select>
+      </div>
+    </div>
+    <div class="item-info-bar" id="mnktp-info-bar" style="display:none"></div>
+    <div class="frow">
+      <div class="ff"><label>Số lượng chuyển <span style="color:#c0392b">*</span></label><input id="mnktp-sl" type="number" min="1" value="1" oninput="onPickNktp()"></div>
+      <div class="ff">
+        <label>Từ xưởng <span style="color:#c0392b">*</span></label>
+        <select id="mnktp-from" onchange="onPickNktp()">
+          <option value="x1">Xưởng 1</option>
+          <option value="x2">Xưởng 2</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="ff">
+        <label>Đến xưởng <span style="color:#c0392b">*</span></label>
+        <select id="mnktp-to" onchange="onPickNktp()">
+          <option value="x2">Xưởng 2</option>
+          <option value="x1">Xưởng 1</option>
+        </select>
+      </div>
+      <div class="ff"><label>Giờ thực hiện</label><input id="mnktp-time" type="time"></div>
+    </div>
+    <div class="frow full"><div class="ff"><label>Người thực hiện</label><input id="mnktp-nguoi" placeholder="Tên nhân viên..."></div></div>
+    <div class="frow full"><div class="ff"><label>Ghi chú</label><input id="mnktp-note" placeholder="Tuỳ chọn..."></div></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal(&#39;modal-nktp&#39;)">Hủy</button>
+      <button class="btn btn-green" onclick="saveNktp()">✓ Lưu chuyển kho</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL GHI NHẬN HÀNG TRẢ VỀ -->
 <div class="modal-overlay" id="modal-tv">
   <div class="modal-box">
@@ -492,6 +534,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div class="tab" onclick="switchTab(&#39;dt&#39;)">💰 Doanh Thu</div>
   <div class="tab" onclick="switchTab(&#39;dh&#39;)">📦 Đơn Hàng</div>
   <div class="tab" onclick="switchTab(&#39;xh&#39;)">🚚 Xuất Hàng TP</div>
+  <div class="tab" onclick="switchTab(&#39;nktp&#39;)">📥 Nhập Kho TP</div>
   <div class="tab" onclick="switchTab(&#39;tv&#39;)">🔧 Hàng Trả Về</div>
   <div class="tab" onclick="switchTab(&#39;kh&#39;)">📋 Kế Hoạch SX</div>
   <div class="tab" onclick="switchTab(&#39;rq&#39;)">📋 Phiếu Request</div>
@@ -517,6 +560,10 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <div class="card"><div class="card-label">Tồn thành phẩm (tại line)</div><div class="card-val cb" id="s-tp-ton">1.715</div></div>
     <div class="card"><div class="card-label">Sản lượng SX hôm nay</div><div class="card-val cg" id="s-tp-sx">0</div></div>
     <div class="card"><div class="card-label">Xuất TP hôm nay</div><div class="card-val ca" id="s-tp-xh">0</div></div>
+  </div>
+  <div class="cards4" style="grid-template-columns:repeat(2,1fr)">
+    <div class="card" style="cursor:pointer" onclick="switchTab('tv')"><div class="card-label">🔧 Hàng trả về — Đang xử lý</div><div class="card-val cr" id="s-tv-dangxuly">0</div></div>
+    <div class="card" style="cursor:pointer" onclick="switchTab('tv')"><div class="card-label">🔧 Hàng trả về — Đã xuất trả</div><div class="card-val cg" id="s-tv-daxuattra">0</div></div>
   </div>
     <div class="chart-wrap"><div class="chart-title">Mặt hàng cần chú ý</div><div id="low-list" style="max-height:200px;overflow-y:auto"><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281801-001</div><div style="font-size:12px;font-weight:600">SÀN XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281801-002</div><div style="font-size:12px;font-weight:600">NẮP GIỮ BĂNG MẠCH LOA XE C…</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281801-003</div><div style="font-size:12px;font-weight:600">NẮP CÀI LỌA XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-001</div><div style="font-size:12px;font-weight:600">LINH KIỆN ĐÈN XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-002</div><div style="font-size:12px;font-weight:600">THÙNG NƯỚC CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-003</div><div style="font-size:12px;font-weight:600">LINH KIỆN ĐẦU XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-004</div><div style="font-size:12px;font-weight:600">LINH KIỆN THÂN XE (CỠ RỘNG)</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-005</div><div style="font-size:12px;font-weight:600">BẢNG ĐIỀU KHIỂN BÊN PHẢI</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-006</div><div style="font-size:12px;font-weight:600">LINH KIỆN ĐUÔI XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281803-001</div><div style="font-size:12px;font-weight:600">2 QUAI THOÁT KẺ TRÊN SÀN XE</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281803-002</div><div style="font-size:12px;font-weight:600">BẮC THANG XE CỨU HỎA BÊN P…</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281803-003</div><div style="font-size:12px;font-weight:600">BẮC THANG XE CỨU HỎA BÊN T…</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-004</div><div style="font-size:12px;font-weight:600">BIÊN TRÁI CỬA BÌNH CHỨA CHÁY</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-005</div><div style="font-size:12px;font-weight:600">CỬA BÊN PHẢI BÌNH CHỨA CHÁY</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-006</div><div style="font-size:12px;font-weight:600">GIÁ ĐỠ CẦN THANG CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-007</div><div style="font-size:12px;font-weight:600">CỬA SỐ XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-008</div><div style="font-size:12px;font-weight:600">TĂNG NƯỚC TƠ CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">Z01-02S21004-001</div><div style="font-size:12px;font-weight:600">THÂN XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21005-001</div><div style="font-size:12px;font-weight:600">THANG ĐẦU XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21005-002</div><div style="font-size:12px;font-weight:600">THANG NGẮN XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21006-001</div><div style="font-size:12px;font-weight:600">ĐÀI CAO XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-001</div><div style="font-size:12px;font-weight:600">GIÁ ĐỠ CẦU THANG CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-002</div><div style="font-size:12px;font-weight:600">CẤY THANG TRÁI</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-003</div><div style="font-size:12px;font-weight:600">CẤY THANG PHẢI</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-004</div><div style="font-size:12px;font-weight:600">LINH KIỆN LỖ GIÁ CẦU THANG</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-005</div><div style="font-size:12px;font-weight:600">LINH KIỆN DINH GIÁ CẦU THANG</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B01-02S21009-001</div><div style="font-size:12px;font-weight:600">ĐẦU XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21009-002</div><div style="font-size:12px;font-weight:600">DÀN Ở ĐẦU XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21019-002</div><div style="font-size:12px;font-weight:600">CÔNG TẮC XE CỨU HỎA / MÁY …</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21023-001</div><div style="font-size:12px;font-weight:600">BÁNH XE</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21023-002</div><div style="font-size:12px;font-weight:600">LỐP XE</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B42-82S19000-002</div><div style="font-size:12px;font-weight:600">PCBA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C01-02S00000-033</div><div style="font-size:12px;font-weight:600">ỐC VÍT (loại 033)</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C01-02S00000-040</div><div style="font-size:12px;font-weight:600">ỐC VÍT (loại 040)</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C01-02S00000-039</div><div style="font-size:12px;font-weight:600">ỐC VÍT (loại 039)</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C02-20005020-001</div><div style="font-size:12px;font-weight:600">ĐAI ỐC</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C16-00020052321</div><div style="font-size:12px;font-weight:600">TRỤC CHỐT NGƯỢC</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C93-51173116-312</div><div style="font-size:12px;font-weight:600">TẤM PHẨM CƠ VÌM</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C43-50173116-311</div><div style="font-size:12px;font-weight:600">TẤM PHẨM CỰC DƯƠNG</div></div><span class="sb sb-red">0 / 100</span></div></div></div>
 </div>
@@ -783,6 +830,15 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <button class="btn btn-blue" onclick="exportSxPDF()">📄 PDF</button>
   </div>
   <div class="info-box">ℹ Nhập sản lượng thành phẩm hoàn thành trong ngày. Hệ thống sẽ <b>tự động trừ linh kiện</b> theo định mức BOM ra tồn kho linh kiện, và <b>cộng vào tồn thành phẩm</b> đang chờ tại line sản xuất (chưa xuất đi).</div>
+  <div class="card" style="margin-bottom:12px">
+    <div style="font-weight:700;font-size:12px;color:#333;margin-bottom:10px">👷 Nhân sự làm việc trong ngày</div>
+    <div class="frow" style="margin-bottom:0">
+      <div class="ff"><label>Nhân sự buổi sáng</label><input id="sx-staff-sang" type="number" min="0" value="0" oninput="saveStaffSx()"></div>
+      <div class="ff"><label>Nhân sự buổi chiều</label><input id="sx-staff-chieu" type="number" min="0" value="0" oninput="saveStaffSx()"></div>
+    </div>
+    <div class="frow full" style="margin-top:10px;margin-bottom:0"><div class="ff"><label>Ghi chú nhân sự</label><input id="sx-staff-note" placeholder="Tuỳ chọn..." oninput="saveStaffSx()"></div></div>
+    <div style="margin-top:8px;font-size:11px;color:#666">Tổng nhân sự hôm nay: <b id="sx-staff-total" style="color:#185FA5">0</b> người</div>
+  </div>
   <div class="tbl-wrap">
     <table><thead><tr>
       <th style="width:34px">STT</th><th style="width:50px">Giờ</th>
@@ -899,6 +955,34 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     </tr></thead><tbody id="xh-body"><tr><td colspan="12" style="text-align:center;padding:32px;color:#999"><div style="font-size:28px;margin-bottom:8px">🚚</div>Chưa có xuất hàng nào được ghi nhận trong ngày này.<br><span style="font-size:11px">Bấm <b>+ Ghi nhận xuất hàng</b> để nhập.</span></td></tr></tbody></table>
   </div>
   <div style="font-size:11px;color:#999;margin-top:4px" id="xh-count">Hiển thị 0 lượt ghi nhận trong ngày 2026-07-21</div>
+</div>
+
+<!-- NHẬP KHO TP (chuyển thành phẩm tồn giữa Xưởng 1 ↔ Xưởng 2, KHÔNG ảnh hưởng linh kiện) -->
+<div class="pg" id="pg-nktp">
+  <div class="day-header">
+    <div class="day-nav">
+      <button class="btn" onclick="chDayNktp(-1)">‹</button>
+      <span class="cur-date" id="disp-date-nktp">Thứ Ba, 21/07/2026</span>
+      <button class="btn" onclick="chDayNktp(1)">›</button>
+      <button class="btn btn-red" onclick="goTodayNktp()">Hôm nay</button>
+    </div>
+    <div class="day-summary">
+      <span style="color:#185FA5;font-weight:700">📥 Đã chuyển: <span id="nktp-day-sum">0</span></span>
+      <span style="color:#555">Lượt ghi: <span id="nktp-day-count" style="font-weight:700">0</span></span>
+    </div>
+    <button class="btn btn-green" onclick="openNktpModal()" style="margin-left:auto">+ Ghi nhận chuyển kho TP</button>
+    <button class="btn" onclick="exportNktpCSV()">⬇ CSV</button>
+    <button class="btn btn-blue" onclick="exportNktpPDF()">📄 PDF</button>
+  </div>
+  <div class="info-box">ℹ Dùng khi thành phẩm tồn được <b>chuyển giữa Xưởng 1 và Xưởng 2</b> (VD: Xưởng 1 gửi thành phẩm tồn lên/sang Xưởng 2). Tồn thành phẩm xưởng gửi sẽ giảm, xưởng nhận sẽ tăng tương ứng — không ảnh hưởng tồn linh kiện.</div>
+  <div class="tbl-wrap">
+    <table><thead><tr>
+      <th style="width:34px">STT</th><th style="width:50px">Giờ</th>
+      <th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th>
+      <th>SL chuyển</th><th>ĐVT</th><th>Từ xưởng</th><th>Đến xưởng</th><th>Người TH</th><th>Tồn xưởng gửi sau</th><th>Tồn xưởng nhận sau</th><th class="tl">Ghi chú</th><th style="width:36px"></th>
+    </tr></thead><tbody id="nktp-body"><tr><td colspan="13" style="text-align:center;padding:32px;color:#999"><div style="font-size:28px;margin-bottom:8px">📥</div>Chưa có lượt chuyển kho thành phẩm nào trong ngày này.<br><span style="font-size:11px">Bấm <b>+ Ghi nhận chuyển kho TP</b> để nhập.</span></td></tr></tbody></table>
+  </div>
+  <div style="font-size:11px;color:#999;margin-top:4px" id="nktp-count">Hiển thị 0 lượt ghi nhận trong ngày</div>
 </div>
 
 <!-- HÀNG TRẢ VỀ (khách hàng trả lại do lỗi, chờ sửa rồi xuất trả — không liên quan tồn kho linh kiện) -->
@@ -1044,10 +1128,13 @@ let shipLog=loadJ('shiplog',[]);
 let allocLog=loadJ('alloclog',[]);
 let curDateSx=new Date();
 let curDateXh=new Date();
+let curDateNktp=new Date();
 let curDateCp=new Date();
 let curMonthDt=new Date();curMonthDt.setDate(1);
 let orders=loadJ('orders',[]);
 let returnLog=loadJ('returnlog',[]);
+let staffLog=loadJ('stafflog',{});
+let tpTransferLog=loadJ('tptransferlog',[]);
 let defectCats=loadJ('defectcats',JSON.parse(JSON.stringify(DFLT_DEFECT_CATS)));
 let planData=loadJ('plandata',{});
 function tomorrowISO(){const d=new Date();d.setDate(d.getDate()+1);return fISO(d);}
@@ -1139,7 +1226,7 @@ function updateAdminUI(){
   else{el.textContent='🔒 Chưa đăng nhập';el.onclick=showLoginGate;el.style.cursor='pointer';el.style.background='rgba(255,255,255,.15)';}
 }
 
-function persist(){sSet('items',JSON.stringify(items));sSet('gdlog',JSON.stringify(gdLog));sSet('rq',JSON.stringify(rqRows));sSet('rqc',rqCtr);sSet('products',JSON.stringify(products));sSet('prodlog',JSON.stringify(prodLog));sSet('shiplog',JSON.stringify(shipLog));sSet('alloclog',JSON.stringify(allocLog));sSet('defectcats',JSON.stringify(defectCats));sSet('plandata',JSON.stringify(planData));sSet('orders',JSON.stringify(orders));sSet('returnlog',JSON.stringify(returnLog));if(!suppressCloudPush)pushCloud();}
+function persist(){sSet('items',JSON.stringify(items));sSet('gdlog',JSON.stringify(gdLog));sSet('rq',JSON.stringify(rqRows));sSet('rqc',rqCtr);sSet('products',JSON.stringify(products));sSet('prodlog',JSON.stringify(prodLog));sSet('shiplog',JSON.stringify(shipLog));sSet('alloclog',JSON.stringify(allocLog));sSet('defectcats',JSON.stringify(defectCats));sSet('plandata',JSON.stringify(planData));sSet('orders',JSON.stringify(orders));sSet('returnlog',JSON.stringify(returnLog));sSet('stafflog',JSON.stringify(staffLog));sSet('tptransferlog',JSON.stringify(tpTransferLog));if(!suppressCloudPush)pushCloud();}
 
 // ── ĐỒNG BỘ DỮ LIỆU ĐÁM MÂY (nhiều máy dùng chung 1 dữ liệu, real-time) ──────
 // Dùng Firebase Realtime Database qua REST API + Server-Sent Events (không cần SDK).
@@ -1157,7 +1244,7 @@ function setCloudStatus(state){
 }
 
 function collectState(){
-  return {items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,allocLog,defectCats,planData,orders,returnLog,_ts:Date.now()};
+  return {items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,allocLog,defectCats,planData,orders,returnLog,staffLog,tpTransferLog,_ts:Date.now()};
 }
 
 function pushCloud(){
@@ -1197,11 +1284,13 @@ function applyCloudState(state){
   planData=state.planData||planData;
   orders=state.orders||orders;
   returnLog=state.returnLog||returnLog;
+  staffLog=state.staffLog||staffLog;
+  tpTransferLog=state.tpTransferLog||tpTransferLog;
   persist(); // chỉ lưu cache máy này, không đẩy ngược lên cloud (suppressCloudPush đang bật)
   suppressCloudPush=false;
   // Vẽ lại toàn bộ giao diện đang có để phản ánh dữ liệu mới nhất
   updateSummary();
-  renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDoanhThu();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();renderOrders();renderTV();
+  renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDoanhThu();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();renderOrders();renderTV();renderStaffSx();renderDayNktp();
   // Chỉ hiện thông báo tối đa 1 lần mỗi 4 giây — tránh dồn dập thông báo/nháy màn hình
   // khi nhiều máy trong xưởng cùng lưu dữ liệu liên tiếp trong thời gian ngắn
   const nowTs=Date.now();
@@ -1270,7 +1359,7 @@ function applyPendingCloudUpdate(){
 function exportBackup(){
   const data={
     __meta:{app:'assembly_control',exported_at:new Date().toISOString(),version:1},
-    items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,defectCats,orders,returnLog
+    items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,defectCats,orders,returnLog,staffLog,tpTransferLog
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -1300,10 +1389,12 @@ function importBackup(file){if(!requireAdmin())return;
     defectCats=data.defectCats||defectCats;
     orders=data.orders||[];
     returnLog=data.returnLog||[];
+    staffLog=data.staffLog||{};
+    tpTransferLog=data.tpTransferLog||[];
     persist();
     document.getElementById('backup-file-input').value='';
     switchTab('tq');
-    renderTonKho();renderDayGd();renderDM();renderSP();renderDaySx();renderDayXh();renderOrders();updateSummary();renderTV();
+    renderTonKho();renderDayGd();renderDM();renderSP();renderDaySx();renderDayXh();renderOrders();updateSummary();renderTV();renderStaffSx();renderDayNktp();
     toast('✅ Đã nhập dữ liệu thành công từ file sao lưu!');
   };
   reader.onerror=function(){toast('Không đọc được file!',true);};
@@ -1362,7 +1453,7 @@ function switchTab(id){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('pg-'+id).classList.add('active');
-  const tabs=['tq','nx','tk','cp','bom','sx','dt','dh','xh','tv','kh','rq','ls','dm'];
+  const tabs=['tq','nx','tk','cp','bom','sx','dt','dh','xh','nktp','tv','kh','rq','ls','dm'];
   document.querySelectorAll('.tab')[tabs.indexOf(id)].classList.add('active');
   if(id==='tq')updateSummary();
   if(id==='ls')renderHis();
@@ -1371,10 +1462,11 @@ function switchTab(id){
   if(id==='nx')renderDayGd();
   if(id==='cp'){document.getElementById('disp-date-cp').textContent=fDate(curDateCp);renderDayCp();}
   if(id==='bom')renderSP();
-  if(id==='sx'){document.getElementById('disp-date-sx').textContent=fDate(curDateSx);renderDaySx();}
+  if(id==='sx'){document.getElementById('disp-date-sx').textContent=fDate(curDateSx);renderDaySx();renderStaffSx();}
   if(id==='dt'){document.getElementById('disp-month-dt').textContent=fMonthLabel(curMonthDt);renderDoanhThu();}
   if(id==='dh')renderOrders();
   if(id==='xh'){document.getElementById('disp-date-xh').textContent=fDate(curDateXh);renderDayXh();}
+  if(id==='nktp'){document.getElementById('disp-date-nktp').textContent=fDate(curDateNktp);renderDayNktp();}
   if(id==='tv')renderTV();
   if(id==='kh'){document.getElementById('kh-date').value=curPlanDate;renderKhRows();renderKhShortage();}
 }
@@ -1599,6 +1691,8 @@ function updateSummary(){
   document.getElementById('s-tp-ton').textContent=fN(products.reduce((s,p)=>s+getTonSP(p),0));
   document.getElementById('s-tp-sx').textContent=fN(prodLog.filter(l=>l.date===td).reduce((s,l)=>s+l.sl,0));
   document.getElementById('s-tp-xh').textContent=fN(shipLog.filter(l=>l.date===td).reduce((s,l)=>s+l.sl,0));
+  document.getElementById('s-tv-dangxuly').textContent=returnLog.filter(l=>l.status==='dangxuly').length;
+  document.getElementById('s-tv-daxuattra').textContent=returnLog.filter(l=>l.status==='daxuattra').length;
   const hdl=document.getElementById('hd-low');
   if(low.length>0){hdl.textContent='⚠ '+low.length+' mặt hàng thiếu';hdl.style.display='inline';}else hdl.style.display='none';
   const all=[...low.map(i=>({...i,_s:'low'})),...warn.map(i=>({...i,_s:'warn'}))];
@@ -2032,8 +2126,8 @@ function renderOrders(){
 }
 
 // ── SẢN LƯỢNG SẢN XUẤT (tự động trừ linh kiện theo BOM) ───────────────────────
-function chDaySx(d){curDateSx=new Date(curDateSx);curDateSx.setDate(curDateSx.getDate()+d);document.getElementById('disp-date-sx').textContent=fDate(curDateSx);renderDaySx();}
-function goTodaySx(){curDateSx=new Date();document.getElementById('disp-date-sx').textContent=fDate(curDateSx);renderDaySx();}
+function chDaySx(d){curDateSx=new Date(curDateSx);curDateSx.setDate(curDateSx.getDate()+d);document.getElementById('disp-date-sx').textContent=fDate(curDateSx);renderDaySx();renderStaffSx();}
+function goTodaySx(){curDateSx=new Date();document.getElementById('disp-date-sx').textContent=fDate(curDateSx);renderDaySx();renderStaffSx();}
 
 // ── DOANH THU ─────────────────────────────────────────────────────────────────
 function fMonthLabel(d){return 'Tháng '+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
@@ -2233,6 +2327,24 @@ function saveSx(){if(!requireAdmin())return;
   renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();renderOrders();updateSummary();
   toast('🏭 Đã ghi nhận SX '+fN(sl)+' '+p.dvt+' — '+p.ten+' (đã tự trừ linh kiện tại '+LOC_LABELS[loc]+')'+(doanhthu?' | Doanh thu: '+fN(doanhthu)+'đ':''));
 }
+// ── NHÂN SỰ LÀM VIỆC THEO NGÀY (sáng/chiều — khai báo 1 lần/ngày, không gắn theo lượt SX) ──
+function renderStaffSx(){
+  const ds=fISO(curDateSx);
+  const rec=staffLog[ds]||{sang:0,chieu:0,note:''};
+  document.getElementById('sx-staff-sang').value=rec.sang||0;
+  document.getElementById('sx-staff-chieu').value=rec.chieu||0;
+  document.getElementById('sx-staff-note').value=rec.note||'';
+  document.getElementById('sx-staff-total').textContent=fN((rec.sang||0)+(rec.chieu||0));
+}
+function saveStaffSx(){
+  const ds=fISO(curDateSx);
+  const sang=parseFloat(document.getElementById('sx-staff-sang').value)||0;
+  const chieu=parseFloat(document.getElementById('sx-staff-chieu').value)||0;
+  const note=document.getElementById('sx-staff-note').value;
+  staffLog[ds]={sang,chieu,note};
+  document.getElementById('sx-staff-total').textContent=fN(sang+chieu);
+  persist();
+}
 function renderDaySx(){
   const ds=fISO(curDateSx);
   const rows=prodLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time));
@@ -2400,6 +2512,100 @@ function delXh(id){if(!requireAdmin())return;
 }
 function exportXhCSV(){const ds=fISO(curDateXh),r=[['Giờ','Mã TP','Tên thành phẩm','ĐVT','SL xuất','Xuất từ xưởng','Xuất đến','Người TH','Tồn TP còn lại','Ghi chú']];shipLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>r.push([l.time,l.ma,l.ten,l.dvt,l.sl,LOC_LABELS[l.xuong]||'Xưởng 1',l.to||'',l.nguoi||'',l.ton_sau,l.note||'']));dlCSV(r,'xuathang-'+ds+'.csv');toast('Đã xuất CSV');}
 function exportXhPDF(){const ds=fISO(curDateXh);const rows=shipLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).map((l,i)=>'<tr><td>'+(i+1)+'</td><td>'+l.time+'</td><td style="font-size:9px">'+l.ma+'</td><td>'+l.ten+'</td><td>−'+fN(l.sl)+' '+l.dvt+'</td><td>'+(LOC_LABELS[l.xuong]||'Xưởng 1')+'</td><td>'+(l.to||'—')+'</td><td>'+(l.nguoi||'—')+'</td><td>'+fN(l.ton_sau)+'</td><td>'+(l.note||'')+'</td></tr>').join('');openPDF(buildPDF('NHẬT KÝ XUẤT HÀNG THÀNH PHẨM — XƯỞNG HẢI TÂN 2','Ngày: '+ds,'<table><thead><tr><th>STT</th><th>Giờ</th><th>Mã TP</th><th>Tên</th><th>SL xuất</th><th>Xưởng xuất</th><th>Xuất đến</th><th>Người TH</th><th>Tồn còn lại</th><th>Ghi chú</th></tr></thead><tbody>'+rows+'</tbody></table>'));}
+
+// ── CHUYỂN KHO THÀNH PHẨM (giữa Xưởng 1 ↔ Xưởng 2 — không đụng tồn linh kiện) ──
+function chDayNktp(d){curDateNktp=new Date(curDateNktp);curDateNktp.setDate(curDateNktp.getDate()+d);document.getElementById('disp-date-nktp').textContent=fDate(curDateNktp);renderDayNktp();}
+function goTodayNktp(){curDateNktp=new Date();document.getElementById('disp-date-nktp').textContent=fDate(curDateNktp);renderDayNktp();}
+function openNktpModal(){if(!requireAdmin())return;
+  if(!products.length){toast('Chưa có thành phẩm nào! Vào tab "Định Mức BOM" để khai báo trước.',true);return;}
+  const sel=document.getElementById('mnktp-ma');
+  sel.innerHTML='<option value="">-- Chọn thành phẩm --</option>';
+  products.forEach(p=>{
+    const opt=document.createElement('option');
+    opt.value=p.ma;opt.textContent='['+p.ma+'] '+p.ten;
+    sel.appendChild(opt);
+  });
+  document.getElementById('mnktp-sl').value=1;
+  document.getElementById('mnktp-from').value='x1';
+  document.getElementById('mnktp-to').value='x2';
+  document.getElementById('mnktp-nguoi').value='';
+  document.getElementById('mnktp-note').value='';
+  document.getElementById('mnktp-info-bar').style.display='none';
+  const now=new Date();
+  document.getElementById('mnktp-time').value=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  openModal('modal-nktp');
+  setTimeout(()=>document.getElementById('mnktp-ma').focus(),200);
+}
+function onPickNktp(){
+  const ma=document.getElementById('mnktp-ma').value;
+  const bar=document.getElementById('mnktp-info-bar');
+  if(!ma){bar.style.display='none';return;}
+  const p=products.find(x=>x.ma===ma);if(!p){bar.style.display='none';return;}
+  const fromLoc=document.getElementById('mnktp-from').value||'x1';
+  const toLoc=document.getElementById('mnktp-to').value||'x2';
+  bar.style.display='flex';
+  bar.innerHTML='<b>Tồn '+LOC_LABELS[fromLoc]+':</b> <span style="font-weight:700">'+fN(getTonSP(p,fromLoc))+' '+p.dvt+'</span>'
+    +'&nbsp;&nbsp;<b>Tồn '+LOC_LABELS[toLoc]+':</b> <span style="font-weight:700">'+fN(getTonSP(p,toLoc))+' '+p.dvt+'</span>';
+}
+function saveNktp(){if(!requireAdmin())return;
+  const ma=document.getElementById('mnktp-ma').value;
+  const sl=parseFloat(document.getElementById('mnktp-sl').value)||0;
+  const fromLoc=document.getElementById('mnktp-from').value||'x1';
+  const toLoc=document.getElementById('mnktp-to').value||'x2';
+  if(!ma){toast('Vui lòng chọn thành phẩm!',true);return;}
+  if(sl<=0){toast('Số lượng phải lớn hơn 0!',true);return;}
+  if(fromLoc===toLoc){toast('Xưởng gửi và xưởng nhận phải khác nhau!',true);return;}
+  const p=products.find(x=>x.ma===ma);
+  if(!p){toast('Không tìm thấy thành phẩm!',true);return;}
+  if(sl>getTonSP(p,fromLoc)){
+    if(!confirm('Tồn '+LOC_LABELS[fromLoc]+' chỉ có '+fN(getTonSP(p,fromLoc))+' '+p.dvt+', chuyển '+fN(sl)+' sẽ làm tồn âm.\nVẫn tiếp tục?'))return;
+  }
+  const time=document.getElementById('mnktp-time').value||'--:--';
+  const nguoi=document.getElementById('mnktp-nguoi').value.trim();
+  const note=document.getElementById('mnktp-note').value.trim();
+  const ds=fISO(curDateNktp);
+  addTonSP(p,fromLoc,-sl);
+  addTonSP(p,toLoc,sl);
+  tpTransferLog.push({id:genId(),date:ds,time,ma:p.ma,ten:p.ten,dvt:p.dvt,sl,fromLoc,toLoc,nguoi,note,from_sau:getTonSP(p,fromLoc),to_sau:getTonSP(p,toLoc)});
+  persist();
+  closeModal('modal-nktp');
+  renderDayNktp();renderSP();updateSummary();
+  toast('📥 Đã chuyển '+fN(sl)+' '+p.dvt+' — '+p.ten+' từ '+LOC_LABELS[fromLoc]+' sang '+LOC_LABELS[toLoc]);
+}
+function renderDayNktp(){
+  const ds=fISO(curDateNktp);
+  const rows=tpTransferLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time));
+  document.getElementById('nktp-day-sum').textContent=fN(rows.reduce((s,r)=>s+r.sl,0));
+  document.getElementById('nktp-day-count').textContent=rows.length;
+  document.getElementById('nktp-count').textContent='Hiển thị '+rows.length+' lượt ghi nhận trong ngày '+ds;
+  if(!rows.length){document.getElementById('nktp-body').innerHTML='<tr><td colspan="13" style="text-align:center;padding:32px;color:#999"><div style="font-size:28px;margin-bottom:8px">📥</div>Chưa có lượt chuyển kho thành phẩm nào trong ngày này.<br><span style="font-size:11px">Bấm <b>+ Ghi nhận chuyển kho TP</b> để nhập.</span></td></tr>';return;}
+  document.getElementById('nktp-body').innerHTML=rows.map((r,i)=>'<tr>'
+    +'<td class="tc">'+(i+1)+'</td>'
+    +'<td class="tc" style="font-weight:700">'+r.time+'</td>'
+    +'<td><div class="ma-code">'+r.ma+'</div></td>'
+    +'<td class="item-ten">'+r.ten+'</td>'
+    +'<td class="tr" style="font-weight:700;color:#185FA5;font-size:14px">'+fN(r.sl)+'</td>'
+    +'<td class="tc">'+r.dvt+'</td>'
+    +'<td class="tc"><span style="background:#eef2f6;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+LOC_LABELS[r.fromLoc]+'</span></td>'
+    +'<td class="tc"><span style="background:#eef2f6;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+LOC_LABELS[r.toLoc]+'</span></td>'
+    +'<td class="tc">'+(r.nguoi||'<span style="color:#ccc">—</span>')+'</td>'
+    +'<td class="tr" style="font-weight:600">'+fN(r.from_sau)+' '+r.dvt+'</td>'
+    +'<td class="tr" style="font-weight:600">'+fN(r.to_sau)+' '+r.dvt+'</td>'
+    +'<td style="color:#888;font-size:11px">'+(r.note||'')+'</td>'
+    +'<td class="tc"><button onclick="delNktp(\''+r.id+'\')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px" title="Xóa">🗑</button></td>'
+    +'</tr>').join('');
+}
+function delNktp(id){if(!requireAdmin())return;
+  const r=tpTransferLog.find(x=>x.id===id);if(!r)return;
+  if(!confirm('Xóa lượt chuyển kho?\n'+r.ten+' — '+fN(r.sl)+' '+r.dvt+' từ '+LOC_LABELS[r.fromLoc]+' sang '+LOC_LABELS[r.toLoc]+'\n\nTồn thành phẩm sẽ được hoàn tác (trả về xưởng gửi, trừ khỏi xưởng nhận).'))return;
+  const p=products.find(x=>x.ma===r.ma);
+  if(p){addTonSP(p,r.fromLoc,r.sl);addTonSP(p,r.toLoc,-r.sl);}
+  tpTransferLog=tpTransferLog.filter(x=>x.id!==id);
+  persist();renderDayNktp();renderSP();updateSummary();
+  toast('Đã xóa lượt chuyển kho và hoàn tác tồn thành phẩm');
+}
+function exportNktpCSV(){const ds=fISO(curDateNktp),r=[['Giờ','Mã TP','Tên thành phẩm','ĐVT','SL chuyển','Từ xưởng','Đến xưởng','Người TH','Tồn xưởng gửi sau','Tồn xưởng nhận sau','Ghi chú']];tpTransferLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>r.push([l.time,l.ma,l.ten,l.dvt,l.sl,LOC_LABELS[l.fromLoc],LOC_LABELS[l.toLoc],l.nguoi||'',l.from_sau,l.to_sau,l.note||'']));dlCSV(r,'chuyenkhotp-'+ds+'.csv');toast('Đã xuất CSV');}
+function exportNktpPDF(){const ds=fISO(curDateNktp);const rows=tpTransferLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).map((l,i)=>'<tr><td>'+(i+1)+'</td><td>'+l.time+'</td><td style="font-size:9px">'+l.ma+'</td><td>'+l.ten+'</td><td>'+fN(l.sl)+' '+l.dvt+'</td><td>'+LOC_LABELS[l.fromLoc]+'</td><td>'+LOC_LABELS[l.toLoc]+'</td><td>'+(l.nguoi||'—')+'</td><td>'+fN(l.from_sau)+'</td><td>'+fN(l.to_sau)+'</td><td>'+(l.note||'')+'</td></tr>').join('');openPDF(buildPDF('NHẬT KÝ CHUYỂN KHO THÀNH PHẨM — XƯỞNG HẢI TÂN 2','Ngày: '+ds,'<table><thead><tr><th>STT</th><th>Giờ</th><th>Mã TP</th><th>Tên</th><th>SL chuyển</th><th>Từ xưởng</th><th>Đến xưởng</th><th>Người TH</th><th>Tồn gửi sau</th><th>Tồn nhận sau</th><th>Ghi chú</th></tr></thead><tbody>'+rows+'</tbody></table>'));}
 
 // ── HÀNG TRẢ VỀ (khách hàng trả lại do lỗi — chỉ theo dõi, KHÔNG đụng tồn kho) ──
 let editTvId=null;
@@ -2924,6 +3130,7 @@ function init(){
   document.getElementById('disp-date').textContent=fDate(curDate);
   document.getElementById('disp-date-sx').textContent=fDate(curDateSx);
   document.getElementById('disp-date-xh').textContent=fDate(curDateXh);
+  document.getElementById('disp-date-nktp').textContent=fDate(curDateNktp);
   document.getElementById('disp-date-cp').textContent=fDate(curDateCp);
   document.getElementById('disp-month-dt').textContent=fMonthLabel(curMonthDt);
   document.getElementById('rq-ngay').value=fISO(now);
@@ -2935,6 +3142,8 @@ function init(){
   renderRq();
   renderOrders();
   renderTV();
+  renderStaffSx();
+  renderDayNktp();
   updateAdminUI();
   tryAutoLogin();
   initCloudSync();
