@@ -1803,7 +1803,7 @@ function buildQtyTargetSVG(labels,actualArr,target){
   labels.forEach((lb,i)=>{
     const v=actualArr[i]||0,x=xFor(i),y=yFor(v),h=(padT+chartH)-y;
     bars+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+Math.max(0,h)+'" rx="2" fill="#185FA5"/>';
-    if(v>0)bars+='<text x="'+(x+bw/2)+'" y="'+(y-4)+'" font-size="8" fill="#0e4278" text-anchor="middle" font-weight="700">'+fmtCompact(v)+'</text>';
+    if(v>0)bars+='<text x="'+(x+bw/2)+'" y="'+(y-4)+'" font-size="8" fill="#0e4278" text-anchor="middle" font-weight="700">'+fN(v)+'</text>';
   });
   const ty=yFor(target);
   const targetLine='<line x1="'+padL+'" y1="'+ty+'" x2="'+(W-padR)+'" y2="'+ty+'" stroke="#e74c3c" stroke-width="2" stroke-dasharray="6,4"/>'
