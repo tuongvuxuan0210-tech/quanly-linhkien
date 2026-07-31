@@ -649,6 +649,11 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <button class="btn btn-blue" onclick="exportTKPDF()">📄 PDF</button>
     <button class="btn btn-red" onclick="openModal('modal-canhang')">⬆ Nhập Cần Hàng</button>
   </div>
+  <div style="display:flex;gap:18px;align-items:center;margin-bottom:10px;padding:10px 14px;background:#f4f6f8;border-radius:8px;font-size:13px">
+    <span>📥 <b>Tổng nhập hôm nay:</b> <span id="tk-sum-nhap" style="color:#1e8449;font-weight:700">0</span></span>
+    <span>📤 <b>Tổng xuất hôm nay:</b> <span id="tk-sum-xuat" style="color:#b7770d;font-weight:700">0</span></span>
+    <span style="color:#999;font-size:11px">(tính theo danh sách đang hiển thị bên dưới — lọc/tìm kiếm sẽ cập nhật lại số này)</span>
+  </div>
   <div class="tbl-wrap">
     <table><thead><tr>
       <th class="tl">Mã hàng</th><th class="tl" style="min-width:150px">Tên linh kiện</th>
@@ -1684,10 +1689,12 @@ function renderTonKho(){
   const todayLogs=gdLog.filter(l=>l.date===ds);
   const rows=items.filter(it=>(!q||(it.ma+it.ten).toLowerCase().includes(q))&&(!fl||it.loai===fl)&&(!fs||getSt(it)===fs));
   const stM={low:'<span class="sb sb-red">Thiếu</span>',warn:'<span class="sb sb-amber">Sắp hết</span>',ok:'<span class="sb sb-green">Đủ hàng</span>'};
+  let sumNhap=0,sumXuat=0;
   document.getElementById('tk-body').innerHTML=rows.map(it=>{
     const st=getSt(it);
     const nh=todayLogs.filter(l=>l.ma===it.ma&&l.type==='nhap').reduce((s,l)=>s+l.sl,0);
     const xu=todayLogs.filter(l=>l.ma===it.ma&&l.type==='xuat').reduce((s,l)=>s+l.sl,0);
+    sumNhap+=nh;sumXuat+=xu;
     return '<tr>'
       +'<td><div class="ma-code">'+it.ma+'</div></td>'
       +'<td class="item-ten">'+it.ten+'</td>'
@@ -1703,6 +1710,8 @@ function renderTonKho(){
       +'<td class="tc">'+stM[st]+'</td>'
       +'</tr>';
   }).join('');
+  document.getElementById('tk-sum-nhap').textContent='+'+fN(sumNhap);
+  document.getElementById('tk-sum-xuat').textContent='−'+fN(sumXuat);
   renderTonKhoTP();
 }
 function renderTonKhoTP(){
