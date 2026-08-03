@@ -285,6 +285,60 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   </div>
 </div>
 
+<!-- MODAL NHẬP FILE CÔNG ĐOẠN (Ép/Phun/In) -->
+<div class="modal-overlay" id="modal-cd-import">
+  <div class="modal-box" style="max-width:640px">
+    <h3>Nhập file chuyển công đoạn <button onclick="closeModal(&#39;modal-cd-import&#39;)">✕</button></h3>
+    <div class="info-box">ℹ File Excel/CSV hàng ngày cần có cột: <b>Ma hang, Ten hang, So luong, Cong doan</b> (giá trị Công đoạn: <b>Ep / Phun / In</b>). Các dòng cùng Mã hàng + Công đoạn sẽ được <b>cộng dồn</b> thành 1 lượt ghi nhận.</div>
+    <div class="drop-zone" id="cd-drop-zone" onclick="document.getElementById(&#39;cd-file-in&#39;).click()">
+      ⬆ Kéo thả file công đoạn (.xlsx, .csv) vào đây hoặc bấm để chọn file
+    </div>
+    <input type="file" id="cd-file-in" accept=".xlsx,.xls,.csv,.txt" style="display:none" onchange="handleCdFile(this)">
+    <div id="cd-import-preview"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal(&#39;modal-cd-import&#39;)">Hủy</button>
+      <button class="btn btn-red" id="btn-ok-cd-import" style="display:none" onclick="confirmCdImport()">✓ Xác nhận cập nhật công đoạn</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GHI NHẬN THỦ CÔNG CÔNG ĐOẠN -->
+<div class="modal-overlay" id="modal-cd">
+  <div class="modal-box">
+    <h3>Ghi nhận chuyển công đoạn <button onclick="closeModal(&#39;modal-cd&#39;)">✕</button></h3>
+    <div class="frow full">
+      <div class="ff">
+        <label>Linh kiện <span style="color:#c0392b">*</span></label>
+        <select id="mcd-ma" onchange="onPickCd()">
+          <option value="">-- Chọn linh kiện --</option>
+        </select>
+      </div>
+    </div>
+    <div class="item-info-bar" id="mcd-info-bar" style="display:none"></div>
+    <div class="frow">
+      <div class="ff">
+        <label>Công đoạn hoàn thành <span style="color:#c0392b">*</span></label>
+        <select id="mcd-congdoan" onchange="onPickCd()">
+          <option value="ep">Ép (bắt đầu — không trừ kho nào)</option>
+          <option value="phun">Phun (trừ tồn Ép, cộng tồn Phun)</option>
+          <option value="in">In (trừ tồn Phun, cộng thẳng vào Kho Tổng)</option>
+        </select>
+      </div>
+      <div class="ff"><label>Số lượng <span style="color:#c0392b">*</span></label><input id="mcd-sl" type="number" min="1" value="1"></div>
+    </div>
+    <div class="frow">
+      <div class="ff"><label>Ngày <span style="color:#c0392b">*</span></label><input id="mcd-ngay" type="date"></div>
+      <div class="ff"><label>Giờ thực hiện</label><input id="mcd-gio" type="time"></div>
+    </div>
+    <div class="frow full"><div class="ff"><label>Người thực hiện</label><input id="mcd-nguoi" placeholder="Tên nhân viên..."></div></div>
+    <div class="frow full"><div class="ff"><label>Ghi chú</label><input id="mcd-note" placeholder="Tuỳ chọn..."></div></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal(&#39;modal-cd&#39;)">Hủy</button>
+      <button class="btn btn-green" onclick="saveCd()">✓ Lưu</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL SẢN PHẨM / ĐỊNH MỨC BOM -->
 <div class="modal-overlay" id="modal-product">
   <div class="modal-box" style="max-width:640px">
@@ -543,6 +597,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div class="tab" onclick="switchTab(&#39;tq&#39;)">📊 Tổng quan</div>
   <div class="tab" onclick="switchTab(&#39;nx&#39;)">↕ Giao Dịch Hàng Ngày</div>
   <div class="tab" onclick="switchTab(&#39;tk&#39;)">📦 Tồn Kho</div>
+  <div class="tab" onclick="switchTab(&#39;cd&#39;)">🏗️ Công Đoạn SX</div>
   <div class="tab" onclick="switchTab(&#39;cp&#39;)">🔀 Cấp Phát Xưởng</div>
   <div class="tab" onclick="switchTab(&#39;bom&#39;)">🧩 Định Mức BOM</div>
   <div class="tab" onclick="switchTab(&#39;sx&#39;)">🏭 Sản Lượng SX</div>
@@ -685,6 +740,48 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
       <th>Mức tối thiểu</th><th>Trạng thái</th>
     </tr></thead>
     <tbody id="tk-tp-body"></tbody></table>
+  </div>
+</div>
+
+<!-- CÔNG ĐOẠN SX (Ép → Phun → In) — chỉ áp dụng cho linh kiện có cờ congDoan=true -->
+<div class="pg" id="pg-cd">
+  <div class="info-box">ℹ Linh kiện thuộc quy trình <b>Ép → Phun → In</b> được theo dõi riêng qua 2 kho trung gian (Ép, Phun). Khi hoàn thành công đoạn <b>In</b>, linh kiện tự động cộng vào <b>Kho Tổng</b> (sẵn sàng cho Kế Hoạch Lắp Ráp) — y hệt cơ chế nhập kho thông thường.</div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+    <b style="font-size:12px">📊 Tồn theo công đoạn hiện tại</b>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-red" onclick="openModal('modal-cd-import')">⬆ Nhập file công đoạn</button>
+      <button class="btn btn-green" onclick="openCdModal()">+ Ghi nhận thủ công</button>
+    </div>
+  </div>
+  <div class="tbl-wrap" style="margin-bottom:18px">
+    <table><thead><tr>
+      <th class="tl">Mã linh kiện</th><th class="tl">Tên linh kiện</th><th>Thuộc mã TP</th>
+      <th>Tồn Ép (chờ Phun)</th><th>Tồn Phun (chờ In)</th><th>Tồn Kho Tổng (sẵn sàng lắp ráp)</th>
+    </tr></thead><tbody id="cd-wip-body"></tbody></table>
+  </div>
+
+  <div class="day-header">
+    <div class="day-nav">
+      <button class="btn" onclick="chDayCd(-1)">‹</button>
+      <span class="cur-date" id="disp-date-cd">Thứ Ba, 21/07/2026</span>
+      <button class="btn" onclick="chDayCd(1)">›</button>
+      <button class="btn btn-red" onclick="goTodayCd()">Hôm nay</button>
+    </div>
+    <div class="day-summary">
+      <span style="color:#185FA5;font-weight:700">Lượt ghi: <span id="cd-day-count">0</span></span>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn" onclick="exportCdCSV()">⬇ CSV</button>
+      <button class="btn btn-blue" onclick="exportCdPDF()">📄 PDF</button>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table><thead><tr>
+      <th style="width:34px">STT</th><th style="width:50px">Giờ</th>
+      <th class="tl">Mã linh kiện</th><th class="tl">Tên linh kiện</th>
+      <th>Công đoạn</th><th>SL</th><th>Người TH</th><th>Tồn sau</th><th class="tl">Ghi chú</th><th style="width:36px"></th>
+    </tr></thead><tbody id="cd-body"><tr><td colspan="10" style="text-align:center;padding:24px;color:#999">Chưa có lượt ghi nhận nào trong ngày này.</td></tr></tbody></table>
   </div>
 </div>
 
@@ -1187,18 +1284,292 @@ let rqRows=loadJ('rq',[]);
 rqCtr=parseInt(sGet('rqc')||'1');
 let curDate=new Date();
 let products=migrateAllProducts(loadJ('products',JSON.parse(JSON.stringify(DFLT_PRODUCTS))));
+
+const PKW_PARTS_PKW4523={
+  "H02-0PKW4523-001":"左脚掌 lòng bàn chân trái",
+  "H02-0PKW4523-002":"右脚掌 lòng bàn chân phải",
+  "H02-0PKW4523-003":"脖子 cổ",
+  "H02-0PKW4523-004":"头 đầu",
+  "H02-0PKW4523-005":"左腿 chân trái",
+  "H02-0PKW4523-006":"右腿 chân phải",
+  "H02-0PKW4523-007":"左手臂 cánh tay trái",
+  "H02-0PKW4523-008":"右手臂 cánh tay phải",
+  "H02-0PKW4523-009":"左肩 vai trái",
+  "H02-0PKW4523-010":"右肩 vai phải",
+  "H02-0PKW4523-011":"左爪 vuốt trái",
+  "H02-0PKW4523-012":"右爪 vuốt phải",
+  "H02-0PKW4523-013":"左脚 chân trái",
+  "H02-0PKW4523-014":"右脚 chân phải",
+  "H02-0PKW4523-015":"左大腿配件 linh kiện đùi trái",
+  "H02-0PKW4523-016":"右大腿配件 linh kiện đùi phải",
+  "H02-0PKW4523-017":"尾巴火焰 chòm lưả đuôi",
+  "H02-0PKW4523-018":"左翼嵴 sống cánh trái",
+  "H02-0PKW4523-019":"右翼嵴 sống cánh phải",
+  "H02-0PKW4523-020":"背嵴 sống lưng",
+  "H02-0PKW4523-021":"左大腿外 mặt ngoài đùi trái",
+  "H02-0PKW4523-022":"左大腿内 mặt trong đùi trái",
+  "H02-0PKW4523-023":"右大腿外 mặt ngoài đùi phải",
+  "H02-0PKW4523-024":"右大腿内 mặt trong đùi phải",
+  "H02-0PKW4523-025":"左牙齿盖 nắp răng trái",
+  "H02-0PKW4523-026":"右牙齿盖 nắp răng phải",
+  "H02-0PKW4523-027":"上颚 hàm trên",
+  "H02-0PKW4523-028":"舌头 lưỡi",
+  "H02-0PKW4523-029":"翅膀座 đế cánh",
+  "H02-0PKW4523-030":"翅膀座盖 nắp đế cánh",
+  "H02-0PKW4523-031":"六角座 đế lục giác",
+  "H02-0PKW4523-032":"尾巴末端 đầu cuối đuôi",
+  "H02-0PKW4523-033":"翅膀左拆件 Linh kiện rời cánh trái",
+  "H02-0PKW4523-034":"翅膀右拆件 Linh kiện rời cánh phải",
+  "H02-0PKW4523-035":"铁线配件1 Linh kiện dây sắt 1",
+  "H02-0PKW4523-036":"铁线配件2 Linh kiện dây sắt 2",
+  "H02-0PKW4523-037":"铁线配件3 Linh kiện dây sắt 3",
+  "H02-0PKW4523-038":"左大身 thân trái",
+  "H02-0PKW4523-039":"右大身 thân phải",
+  "H02-0PKW4523-040":"左前翼 cánh trước bên trái",
+  "H02-0PKW4523-041":"右前翼 cánh trước bên phải",
+  "H02-0PKW4523-042":"左中翼 cánh giữa bên trái",
+  "H02-0PKW4523-043":"右中翼 cánh giữa bên phải",
+  "H02-0PKW4523-044":"左后翼 cánh sau bên trái",
+  "H02-0PKW4523-045":"右后翼 cánh sau bên phải",
+  "H02-0PKW4523-046":"尾巴 đuôi",
+  "H02-0PKW4523-047":"尾巴上铰 Khớp nối đuôi trên",
+  "H02-0PKW4523-048":"头上铰 Khớp nối  đầu trên",
+  "H02-0PKW4523-049":"颈上铰 Khớp nối cổ trên",
+  "H02-0PKW4523-050":"大腿铰 Khớp nối đùi",
+  "H02-0PKW4523-051":"脚铰 Khớp nối chân",
+  "H02-0PKW4523-052":"手掌铰 Khớp nối lòng bàn tay",
+  "H02-0PKW4523-053":"手肘铰 Khớp nối khuỷu tay",
+  "H02-0PKW4523-054":"肩膀铰 Khớp nối vai",
+  "H02-0PKW4523-055":"膝铰 Khớp nối đầu gối",
+  "H02-0PKW4523-056":"脚掌钉 đinh lòng bàn chân",
+  "H02-0PKW4523-057":"头下铰 Khớp nối đầu dưới",
+  "H02-0PKW4523-058":"颈下铰 Khớp nối cổ dưới",
+  "H02-0PKW4523-059":"尾巴下铰 Khớp nối đuôi dưới",
+  "H02-0PKW4180-031":"连杆头  thanh liên kết với đầu",
+  "H02-0PKW4180-032":"连杆  thanh liên kết",
+  "H02-0PKW4180-033":"连杆尾 thanh liên kết đuôi",
+  "H02-0PKW4180-034":"卡位齿片 miếng răng định vị.",
+  "H02-0PKW4180-035":"底座 đế",
+};
+const PKW_PARTS_PKW4962={
+  "JZ256-11001":"超梦头Đầu Mewtwo",
+  "JZ256-11002":"上身thân",
+  "JZ256-11003":"头拆件Chi tiết đầu rời",
+  "JZ256-11004":"头连杆磨擦件A / Chi tiết ma sát thanh liên kết đầu",
+  "JZ256-11005":"头连杆磨擦件B / Chi tiết ma sát thanh liên kết đầu",
+  "JZ256-11006":"下身连杆磨擦件 / Chi tiết ma sát thanh liên kết thân dưới",
+  "JZ256-11007":"支架插件Linh kiện gắn giá đỡ",
+  "JZ256-11008":"左身Thân trái",
+  "JZ256-11009":"右身Thân phải",
+  "JZ256-11010":"中身前Thân giữa trước",
+  "JZ256-11011":"中身后Thân giữa sau",
+  "JZ256-11012":"铁线固定件A左Chi tiết cố định dây thép A – trái",
+  "JZ256-11013":"铁线固定件A右Chi tiết cố định dây thép A – phải",
+  "JZ256-11014":"铁线固定件B左Chi tiết cố định dây thép B – trái",
+  "JZ256-11015":"铁线固定件B右Chi tiết cố định dây thép B – phải",
+  "JZ256-11016":"脖子cổ",
+  "JZ256-11017":"肩膀（L/R)Vai (trái/phải)",
+  "JZ256-11018":"手臂（L/R)Cánh tay (trái/phải)",
+  "JZ256-11019":"手掌（L/R)Bàn tay (trái/phải)",
+  "JZ256-11020":"手指A（细）Ngón tay A (nhỏ)",
+  "JZ256-11021":"手指B（粗）Ngón tay B (to)",
+  "JZ256-11022":"左大腿Đùi trái",
+  "JZ256-11023":"右大腿Đùi phải",
+  "JZ256-11024":"左大腿盖Nắp đùi trái",
+  "JZ256-11025":"右大腿盖Nắp đùi phải",
+  "JZ256-11026":"左脚Chân trái",
+  "JZ256-11027":"右脚Chân phải",
+  "JZ256-11028":"左脚掌Bàn chân trái",
+  "JZ256-11029":"右脚掌Bàn chân phải",
+  "JZ256-11030":"大腿插件Linh kiện gắn đùi",
+  "JZ256-11031":"左小腿Cẳng chân trái",
+  "JZ256-11032":"右小腿Cẳng chân phải",
+  "JZ256-11033":"小腿连接铰Khớp nối cẳng chân",
+  "JZ256-11034":"大腿连接铰Khớp nối đùi",
+  "JZ256-11035":"尾巴đuôi",
+  "JZ256-11036":"天线ăng-ten",
+  "JZ256-11037":"脖子铰Khớp cổ",
+  "JZ256-11038":"肩膀铰Khớp vai",
+  "JZ256-11039":"上身铰Khớp thân trên",
+  "JZ256-11040":"中身连接铰Khớp nối thân giữa",
+  "JZ256-11041":"中身定位铰Khớp định vị thân giữa",
+  "JZ256-11042":"小腿连接铰Khớp nối cẳng chân",
+  "JZ256-11043":"脚掌钉Đinh bàn chân",
+  "JZ256-11044":"小腿铰Khớp cẳng chân",
+  "JZ256-11045":"手指铰AKhớp ngón tay A",
+  "JZ256-11046":"手指铰BKhớp ngón tay B",
+  "JZ256-11047":"手臂连接铰Khớp nối cánh tay",
+  "JZ256-11048":"手掌铰Khớp bàn tay",
+  "JZ256-11049":"大腿连接铰Khớp nối đùi",
+  "JZ207-11031":"连杆头  thanh liên kết với đầu",
+  "JZ207-11032":"连杆  thanh liên kết",
+  "JZ207-11033":"连杆尾 thanh liên kết đuôi",
+  "JZ207-11034":"卡位齿片 miếng răng định vị.",
+  "JZ207-11035":"底座 đế",
+};
+
+// ── Migration một lần: thêm 2 mã PKW4523/PKW4962 + linh kiện (từ Data_mới.xlsx) ──
+function migratePKWData(){
+  let changed=false;
+  if(!products.find(p=>p.ma==='PKW4523')){
+    changed=true;
+    const bom_PKW4523=[
+      {ma:"H02-0PKW4523-001",sl:1},
+      {ma:"H02-0PKW4523-002",sl:1},
+      {ma:"H02-0PKW4523-003",sl:1},
+      {ma:"H02-0PKW4523-004",sl:1},
+      {ma:"H02-0PKW4523-005",sl:1},
+      {ma:"H02-0PKW4523-006",sl:1},
+      {ma:"H02-0PKW4523-007",sl:1},
+      {ma:"H02-0PKW4523-008",sl:1},
+      {ma:"H02-0PKW4523-009",sl:1},
+      {ma:"H02-0PKW4523-010",sl:1},
+      {ma:"H02-0PKW4523-011",sl:1},
+      {ma:"H02-0PKW4523-012",sl:1},
+      {ma:"H02-0PKW4523-013",sl:1},
+      {ma:"H02-0PKW4523-014",sl:1},
+      {ma:"H02-0PKW4523-015",sl:1},
+      {ma:"H02-0PKW4523-016",sl:1},
+      {ma:"H02-0PKW4523-017",sl:1},
+      {ma:"H02-0PKW4523-018",sl:1},
+      {ma:"H02-0PKW4523-019",sl:1},
+      {ma:"H02-0PKW4523-020",sl:1},
+      {ma:"H02-0PKW4523-021",sl:1},
+      {ma:"H02-0PKW4523-022",sl:1},
+      {ma:"H02-0PKW4523-023",sl:1},
+      {ma:"H02-0PKW4523-024",sl:1},
+      {ma:"H02-0PKW4523-025",sl:1},
+      {ma:"H02-0PKW4523-026",sl:1},
+      {ma:"H02-0PKW4523-027",sl:1},
+      {ma:"H02-0PKW4523-028",sl:1},
+      {ma:"H02-0PKW4523-029",sl:1},
+      {ma:"H02-0PKW4523-030",sl:1},
+      {ma:"H02-0PKW4523-031",sl:1},
+      {ma:"H02-0PKW4523-032",sl:1},
+      {ma:"H02-0PKW4523-033",sl:1},
+      {ma:"H02-0PKW4523-034",sl:1},
+      {ma:"H02-0PKW4523-035",sl:1},
+      {ma:"H02-0PKW4523-036",sl:1},
+      {ma:"H02-0PKW4523-037",sl:1},
+      {ma:"H02-0PKW4523-038",sl:1},
+      {ma:"H02-0PKW4523-039",sl:1},
+      {ma:"H02-0PKW4523-040",sl:1},
+      {ma:"H02-0PKW4523-041",sl:1},
+      {ma:"H02-0PKW4523-042",sl:1},
+      {ma:"H02-0PKW4523-043",sl:1},
+      {ma:"H02-0PKW4523-044",sl:1},
+      {ma:"H02-0PKW4523-045",sl:1},
+      {ma:"H02-0PKW4523-046",sl:1},
+      {ma:"H02-0PKW4523-047",sl:1},
+      {ma:"H02-0PKW4523-048",sl:1},
+      {ma:"H02-0PKW4523-049",sl:1},
+      {ma:"H02-0PKW4523-050",sl:1},
+      {ma:"H02-0PKW4523-051",sl:1},
+      {ma:"H02-0PKW4523-052",sl:1},
+      {ma:"H02-0PKW4523-053",sl:1},
+      {ma:"H02-0PKW4523-054",sl:1},
+      {ma:"H02-0PKW4523-055",sl:1},
+      {ma:"H02-0PKW4523-056",sl:1},
+      {ma:"H02-0PKW4523-057",sl:1},
+      {ma:"H02-0PKW4523-058",sl:1},
+      {ma:"H02-0PKW4523-059",sl:1},
+      {ma:"H02-0PKW4180-031",sl:1},
+      {ma:"H02-0PKW4180-032",sl:1},
+      {ma:"H02-0PKW4180-033",sl:1},
+      {ma:"H02-0PKW4180-034",sl:1},
+      {ma:"H02-0PKW4180-035",sl:1},
+    ];
+    bom_PKW4523.forEach(b=>{
+      if(!items.find(it=>it.ma===b.ma)){
+        const info=PKW_PARTS_PKW4523[b.ma];
+        items.push({ma:b.ma,ten:info,loai:'Đồ chơi',dvt:'cái',ton:0,min:0,congDoan:true,wip:{ep:0,phun:0,in:0}});
+      }
+    });
+    products.push({ma:'PKW4523',ten:'PKW4523 (thành phẩm đồ chơi)',dvt:'con',ton:0,min:0,note:'Import từ Data_mới.xlsx',bom:bom_PKW4523});
+  }
+  if(!products.find(p=>p.ma==='PKW4962')){
+    changed=true;
+    const bom_PKW4962=[
+      {ma:"JZ256-11001",sl:1},
+      {ma:"JZ256-11002",sl:1},
+      {ma:"JZ256-11003",sl:1},
+      {ma:"JZ256-11004",sl:1},
+      {ma:"JZ256-11005",sl:1},
+      {ma:"JZ256-11006",sl:1},
+      {ma:"JZ256-11007",sl:1},
+      {ma:"JZ256-11008",sl:1},
+      {ma:"JZ256-11009",sl:1},
+      {ma:"JZ256-11010",sl:1},
+      {ma:"JZ256-11011",sl:1},
+      {ma:"JZ256-11012",sl:1},
+      {ma:"JZ256-11013",sl:1},
+      {ma:"JZ256-11014",sl:1},
+      {ma:"JZ256-11015",sl:1},
+      {ma:"JZ256-11016",sl:1},
+      {ma:"JZ256-11017",sl:1},
+      {ma:"JZ256-11018",sl:1},
+      {ma:"JZ256-11019",sl:1},
+      {ma:"JZ256-11020",sl:1},
+      {ma:"JZ256-11021",sl:1},
+      {ma:"JZ256-11022",sl:1},
+      {ma:"JZ256-11023",sl:1},
+      {ma:"JZ256-11024",sl:1},
+      {ma:"JZ256-11025",sl:1},
+      {ma:"JZ256-11026",sl:1},
+      {ma:"JZ256-11027",sl:1},
+      {ma:"JZ256-11028",sl:1},
+      {ma:"JZ256-11029",sl:1},
+      {ma:"JZ256-11030",sl:1},
+      {ma:"JZ256-11031",sl:1},
+      {ma:"JZ256-11032",sl:1},
+      {ma:"JZ256-11033",sl:1},
+      {ma:"JZ256-11034",sl:1},
+      {ma:"JZ256-11035",sl:1},
+      {ma:"JZ256-11036",sl:1},
+      {ma:"JZ256-11037",sl:1},
+      {ma:"JZ256-11038",sl:1},
+      {ma:"JZ256-11039",sl:1},
+      {ma:"JZ256-11040",sl:1},
+      {ma:"JZ256-11041",sl:1},
+      {ma:"JZ256-11042",sl:1},
+      {ma:"JZ256-11043",sl:1},
+      {ma:"JZ256-11044",sl:1},
+      {ma:"JZ256-11045",sl:1},
+      {ma:"JZ256-11046",sl:1},
+      {ma:"JZ256-11047",sl:1},
+      {ma:"JZ256-11048",sl:1},
+      {ma:"JZ256-11049",sl:1},
+      {ma:"JZ207-11031",sl:1},
+      {ma:"JZ207-11032",sl:1},
+      {ma:"JZ207-11033",sl:1},
+      {ma:"JZ207-11034",sl:1},
+      {ma:"JZ207-11035",sl:1},
+    ];
+    bom_PKW4962.forEach(b=>{
+      if(!items.find(it=>it.ma===b.ma)){
+        const info=PKW_PARTS_PKW4962[b.ma];
+        items.push({ma:b.ma,ten:info,loai:'Đồ chơi',dvt:'cái',ton:0,min:0,congDoan:true,wip:{ep:0,phun:0,in:0}});
+      }
+    });
+    products.push({ma:'PKW4962',ten:'PKW4962 (thành phẩm đồ chơi)',dvt:'con',ton:0,min:0,note:'Import từ Data_mới.xlsx',bom:bom_PKW4962});
+  }
+  if(changed){persist();}
+}
+
 let prodLog=loadJ('prodlog',[]);
 let shipLog=loadJ('shiplog',[]);
 let allocLog=loadJ('alloclog',[]);
 let curDateSx=new Date();
 let curDateXh=new Date();
 let curDateNktp=new Date();
+let curDateCd=new Date();
 let curDateCp=new Date();
 let curMonthDt=new Date();curMonthDt.setDate(1);
 let orders=loadJ('orders',[]);
 let returnLog=loadJ('returnlog',[]);
 let staffLog=loadJ('stafflog',{});
 let tpTransferLog=loadJ('tptransferlog',[]);
+let congDoanLog=loadJ('congdoanlog',[]);
 let defectCats=loadJ('defectcats',JSON.parse(JSON.stringify(DFLT_DEFECT_CATS)));
 let planData=loadJ('plandata',{});
 function tomorrowISO(){const d=new Date();d.setDate(d.getDate()+1);return fISO(d);}
@@ -1290,7 +1661,7 @@ function updateAdminUI(){
   else{el.textContent='🔒 Chưa đăng nhập';el.onclick=showLoginGate;el.style.cursor='pointer';el.style.background='rgba(255,255,255,.15)';}
 }
 
-function persist(){sSet('items',JSON.stringify(items));sSet('gdlog',JSON.stringify(gdLog));sSet('rq',JSON.stringify(rqRows));sSet('rqc',rqCtr);sSet('products',JSON.stringify(products));sSet('prodlog',JSON.stringify(prodLog));sSet('shiplog',JSON.stringify(shipLog));sSet('alloclog',JSON.stringify(allocLog));sSet('defectcats',JSON.stringify(defectCats));sSet('plandata',JSON.stringify(planData));sSet('orders',JSON.stringify(orders));sSet('returnlog',JSON.stringify(returnLog));sSet('stafflog',JSON.stringify(staffLog));sSet('tptransferlog',JSON.stringify(tpTransferLog));if(!suppressCloudPush)pushCloud();}
+function persist(){sSet('items',JSON.stringify(items));sSet('gdlog',JSON.stringify(gdLog));sSet('rq',JSON.stringify(rqRows));sSet('rqc',rqCtr);sSet('products',JSON.stringify(products));sSet('prodlog',JSON.stringify(prodLog));sSet('shiplog',JSON.stringify(shipLog));sSet('alloclog',JSON.stringify(allocLog));sSet('defectcats',JSON.stringify(defectCats));sSet('plandata',JSON.stringify(planData));sSet('orders',JSON.stringify(orders));sSet('returnlog',JSON.stringify(returnLog));sSet('stafflog',JSON.stringify(staffLog));sSet('tptransferlog',JSON.stringify(tpTransferLog));sSet('congdoanlog',JSON.stringify(congDoanLog));if(!suppressCloudPush)pushCloud();}
 
 // ── ĐỒNG BỘ DỮ LIỆU ĐÁM MÂY (nhiều máy dùng chung 1 dữ liệu, real-time) ──────
 // Dùng Firebase Realtime Database qua REST API + Server-Sent Events (không cần SDK).
@@ -1308,7 +1679,7 @@ function setCloudStatus(state){
 }
 
 function collectState(){
-  return {items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,allocLog,defectCats,planData,orders,returnLog,staffLog,tpTransferLog,_ts:Date.now()};
+  return {items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,allocLog,defectCats,planData,orders,returnLog,staffLog,tpTransferLog,congDoanLog,_ts:Date.now()};
 }
 
 function pushCloud(){
@@ -1350,11 +1721,12 @@ function applyCloudState(state){
   returnLog=state.returnLog||returnLog;
   staffLog=state.staffLog||staffLog;
   tpTransferLog=state.tpTransferLog||tpTransferLog;
+  congDoanLog=state.congDoanLog||congDoanLog;
   persist(); // chỉ lưu cache máy này, không đẩy ngược lên cloud (suppressCloudPush đang bật)
   suppressCloudPush=false;
   // Vẽ lại toàn bộ giao diện đang có để phản ánh dữ liệu mới nhất
   updateSummary();
-  renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDoanhThu();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();renderOrders();renderTV();renderDayNktp();
+  renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDoanhThu();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();renderOrders();renderTV();renderDayNktp();renderCongDoanWip();renderDayCongDoan();
   // Chỉ hiện thông báo tối đa 1 lần mỗi 4 giây — tránh dồn dập thông báo/nháy màn hình
   // khi nhiều máy trong xưởng cùng lưu dữ liệu liên tiếp trong thời gian ngắn
   const nowTs=Date.now();
@@ -1423,7 +1795,7 @@ function applyPendingCloudUpdate(){
 function exportBackup(){
   const data={
     __meta:{app:'assembly_control',exported_at:new Date().toISOString(),version:1},
-    items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,defectCats,orders,returnLog,staffLog,tpTransferLog
+    items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,defectCats,orders,returnLog,staffLog,tpTransferLog,congDoanLog
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -1455,10 +1827,11 @@ function importBackup(file){if(!requireAdmin())return;
     returnLog=data.returnLog||[];
     staffLog=data.staffLog||{};
     tpTransferLog=data.tpTransferLog||[];
+    congDoanLog=data.congDoanLog||[];
     persist();
     document.getElementById('backup-file-input').value='';
     switchTab('tq');
-    renderTonKho();renderDayGd();renderDM();renderSP();renderDaySx();renderDayXh();renderOrders();updateSummary();renderTV();renderDayNktp();
+    renderTonKho();renderDayGd();renderDM();renderSP();renderDaySx();renderDayXh();renderOrders();updateSummary();renderTV();renderDayNktp();renderCongDoanWip();renderDayCongDoan();
     toast('✅ Đã nhập dữ liệu thành công từ file sao lưu!');
   };
   reader.onerror=function(){toast('Không đọc được file!',true);};
@@ -1517,12 +1890,13 @@ function switchTab(id){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('pg-'+id).classList.add('active');
-  const tabs=['tq','nx','tk','cp','bom','sx','dt','dh','xh','nktp','tv','kh','rq','ls','dm'];
+  const tabs=['tq','nx','tk','cd','cp','bom','sx','dt','dh','xh','nktp','tv','kh','rq','ls','dm'];
   document.querySelectorAll('.tab')[tabs.indexOf(id)].classList.add('active');
   if(id==='tq')updateSummary();
   if(id==='ls')renderHis();
   if(id==='dm')renderDM();
   if(id==='tk')renderTonKho();
+  if(id==='cd'){renderCongDoanWip();renderDayCongDoan();}
   if(id==='nx')renderDayGd();
   if(id==='cp'){document.getElementById('disp-date-cp').textContent=fDate(curDateCp);renderDayCp();}
   if(id==='bom')renderSP();
@@ -3507,14 +3881,239 @@ document.getElementById('canhang-drop-zone') && document.getElementById('canhang
 });
 document.getElementById('canhang-drop-zone') && document.getElementById('canhang-drop-zone').addEventListener('dragover',e=>e.preventDefault());
 
+// ── CÔNG ĐOẠN SX: Ép → Phun → In (chỉ áp dụng cho items có congDoan=true) ──
+function migrateCdItem(it){if(!it.wip)it.wip={ep:0,phun:0,in:0};it.wip.ep=it.wip.ep||0;it.wip.phun=it.wip.phun||0;it.wip.in=it.wip.in||0;return it;}
+const CD_LABELS={ep:'Ép',phun:'Phun',in:'In'};
+function cdItems(){return items.filter(it=>it.congDoan===true);}
+function cdOptions(selMa){
+  return '<option value="">-- Chọn linh kiện --</option>'+cdItems().map(it=>'<option value="'+it.ma+'"'+(it.ma===selMa?' selected':'')+'>['+it.ma+'] '+it.ten+'</option>').join('');
+}
+function renderCongDoanWip(){
+  const body=document.getElementById('cd-wip-body');if(!body)return;
+  const list=cdItems();
+  if(!list.length){body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:#999">Chưa có linh kiện nào thuộc quy trình công đoạn.</td></tr>';return;}
+  body.innerHTML=list.map(it=>{
+    migrateCdItem(it);migrateItemTon(it);
+    const prod=products.find(p=>(p.bom||[]).some(b=>b.ma===it.ma));
+    return '<tr>'
+      +'<td><div class="ma-code">'+it.ma+'</div></td>'
+      +'<td class="item-ten">'+it.ten+'</td>'
+      +'<td class="tc">'+(prod?prod.ma:'<span style="color:#ccc">—</span>')+'</td>'
+      +'<td class="tr" style="font-weight:700;color:#b7770d">'+fN(it.wip.ep)+'</td>'
+      +'<td class="tr" style="font-weight:700;color:#185FA5">'+fN(it.wip.phun)+'</td>'
+      +'<td class="tr" style="font-weight:700;color:#1e8449">'+fN(getTon(it,'kt'))+'</td>'
+      +'</tr>';
+  }).join('');
+}
+function chDayCd(d){curDateCd=new Date(curDateCd);curDateCd.setDate(curDateCd.getDate()+d);document.getElementById('disp-date-cd').textContent=fDate(curDateCd);renderDayCongDoan();}
+function goTodayCd(){curDateCd=new Date();document.getElementById('disp-date-cd').textContent=fDate(curDateCd);renderDayCongDoan();}
+function openCdModal(){if(!requireAdmin())return;
+  if(!cdItems().length){toast('Chưa có linh kiện nào thuộc quy trình Ép-Phun-In!',true);return;}
+  document.getElementById('mcd-ma').innerHTML=cdOptions('');
+  document.getElementById('mcd-congdoan').value='ep';
+  document.getElementById('mcd-sl').value=1;
+  document.getElementById('mcd-ngay').value=fISO(new Date());
+  const now=new Date();
+  document.getElementById('mcd-gio').value=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('mcd-nguoi').value='';
+  document.getElementById('mcd-note').value='';
+  document.getElementById('mcd-info-bar').style.display='none';
+  openModal('modal-cd');
+  setTimeout(()=>document.getElementById('mcd-ma').focus(),200);
+}
+function onPickCd(){
+  const ma=document.getElementById('mcd-ma').value;
+  const bar=document.getElementById('mcd-info-bar');
+  if(!ma){bar.style.display='none';return;}
+  const it=items.find(x=>x.ma===ma);if(!it){bar.style.display='none';return;}
+  migrateCdItem(it);migrateItemTon(it);
+  bar.style.display='flex';
+  bar.innerHTML='<b>Tồn Ép:</b> '+fN(it.wip.ep)+' &nbsp;&nbsp; <b>Tồn Phun:</b> '+fN(it.wip.phun)+' &nbsp;&nbsp; <b>Tồn Kho Tổng:</b> '+fN(getTon(it,'kt'))+' '+it.dvt;
+}
+function applyCdTransition(it,congdoan,sl,opts){
+  // opts: {date, time, nguoi, note} — trả về {ok, sau, note_extra}
+  migrateCdItem(it);migrateItemTon(it);
+  let sau=0;
+  if(congdoan==='ep'){
+    it.wip.ep+=sl;sau=it.wip.ep;
+  }else if(congdoan==='phun'){
+    if(sl>it.wip.ep&&!opts.force)return {ok:false,need_confirm:true,msg:'Tồn Ép chỉ có '+fN(it.wip.ep)+', chuyển Phun '+fN(sl)+' sẽ làm tồn Ép âm.\nVẫn tiếp tục?'};
+    it.wip.ep=Math.max(0,it.wip.ep-sl);it.wip.phun+=sl;sau=it.wip.phun;
+  }else if(congdoan==='in'){
+    if(sl>it.wip.phun&&!opts.force)return {ok:false,need_confirm:true,msg:'Tồn Phun chỉ có '+fN(it.wip.phun)+', chuyển In '+fN(sl)+' sẽ làm tồn Phun âm.\nVẫn tiếp tục?'};
+    it.wip.phun=Math.max(0,it.wip.phun-sl);
+    it.ton.kt=(it.ton.kt||0)+sl;
+    sau=it.ton.kt;
+    gdLog.push({id:genId(),date:opts.date,time:opts.time,ma:it.ma,ten:it.ten,dvt:it.dvt,type:'nhap',sl,loc:'kt',from:'Hoàn thành công đoạn In',nguoi:opts.nguoi||'',ton_sau:getTon(it,'kt'),note:'Chuyển công đoạn: In → Kho Tổng'+(opts.note?' — '+opts.note:'')});
+  }
+  return {ok:true,sau};
+}
+function saveCd(){if(!requireAdmin())return;
+  const ma=document.getElementById('mcd-ma').value;
+  const congdoan=document.getElementById('mcd-congdoan').value;
+  const sl=parseFloat(document.getElementById('mcd-sl').value)||0;
+  const ngay=document.getElementById('mcd-ngay').value||fISO(new Date());
+  const gio=document.getElementById('mcd-gio').value||'--:--';
+  const nguoi=document.getElementById('mcd-nguoi').value.trim();
+  const note=document.getElementById('mcd-note').value.trim();
+  if(!ma){toast('Vui lòng chọn linh kiện!',true);return;}
+  if(sl<=0){toast('Số lượng phải lớn hơn 0!',true);return;}
+  const it=items.find(x=>x.ma===ma);if(!it){toast('Không tìm thấy linh kiện!',true);return;}
+  let res=applyCdTransition(it,congdoan,sl,{date:ngay,time:gio,nguoi,note,force:false});
+  if(!res.ok&&res.need_confirm){
+    if(!confirm(res.msg))return;
+    res=applyCdTransition(it,congdoan,sl,{date:ngay,time:gio,nguoi,note,force:true});
+  }
+  congDoanLog.push({id:genId(),date:ngay,time:gio,ma:it.ma,ten:it.ten,dvt:it.dvt,congdoan,sl,nguoi,note,ton_sau:res.sau});
+  persist();closeModal('modal-cd');renderCongDoanWip();renderDayCongDoan();renderTonKho();updateSummary();
+  toast('✅ Đã ghi nhận '+CD_LABELS[congdoan]+' '+fN(sl)+' '+it.dvt+' — '+it.ten);
+}
+function delCd(id){if(!requireAdmin())return;
+  const l=congDoanLog.find(x=>x.id===id);if(!l)return;
+  if(!confirm('Xóa lượt ghi nhận này?\n'+l.ten+' — '+CD_LABELS[l.congdoan]+' '+fN(l.sl)+' '+l.dvt+'\n\nTồn theo công đoạn sẽ được hoàn tác.'))return;
+  const it=items.find(x=>x.ma===l.ma);
+  if(it){
+    migrateCdItem(it);migrateItemTon(it);
+    if(l.congdoan==='ep')it.wip.ep=Math.max(0,it.wip.ep-l.sl);
+    else if(l.congdoan==='phun'){it.wip.phun=Math.max(0,it.wip.phun-l.sl);it.wip.ep+=l.sl;}
+    else if(l.congdoan==='in'){it.ton.kt=Math.max(0,(it.ton.kt||0)-l.sl);it.wip.phun+=l.sl;}
+  }
+  congDoanLog=congDoanLog.filter(x=>x.id!==id);
+  persist();renderCongDoanWip();renderDayCongDoan();renderTonKho();updateSummary();
+  toast('Đã xóa và hoàn tác tồn công đoạn');
+}
+function renderDayCongDoan(){
+  const ds=fISO(curDateCd);
+  const rows=congDoanLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time));
+  document.getElementById('cd-day-count').textContent=rows.length;
+  const body=document.getElementById('cd-body');
+  if(!rows.length){body.innerHTML='<tr><td colspan="10" style="text-align:center;padding:24px;color:#999">Chưa có lượt ghi nhận nào trong ngày này.</td></tr>';return;}
+  body.innerHTML=rows.map((r,i)=>'<tr>'
+    +'<td class="tc">'+(i+1)+'</td>'
+    +'<td class="tc" style="font-weight:700">'+r.time+'</td>'
+    +'<td><div class="ma-code">'+r.ma+'</div></td>'
+    +'<td class="item-ten">'+r.ten+'</td>'
+    +'<td class="tc"><span style="background:#eef2f6;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+CD_LABELS[r.congdoan]+'</span></td>'
+    +'<td class="tr" style="font-weight:700">'+fN(r.sl)+' '+r.dvt+'</td>'
+    +'<td class="tc">'+(r.nguoi||'<span style="color:#ccc">—</span>')+'</td>'
+    +'<td class="tr" style="font-weight:600">'+fN(r.ton_sau)+'</td>'
+    +'<td style="color:#888;font-size:11px">'+(r.note||'')+'</td>'
+    +'<td class="tc"><button onclick="delCd(\''+r.id+'\')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px" title="Xóa">🗑</button></td>'
+    +'</tr>').join('');
+}
+function exportCdCSV(){const ds=fISO(curDateCd),r=[['Giờ','Mã linh kiện','Tên','ĐVT','Công đoạn','SL','Người TH','Tồn sau','Ghi chú']];congDoanLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>r.push([l.time,l.ma,l.ten,l.dvt,CD_LABELS[l.congdoan],l.sl,l.nguoi||'',l.ton_sau,l.note||'']));dlCSV(r,'congdoan-'+ds+'.csv');toast('Đã xuất CSV');}
+function exportCdPDF(){const ds=fISO(curDateCd);const rows=congDoanLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).map((l,i)=>'<tr><td>'+(i+1)+'</td><td>'+l.time+'</td><td style="font-size:9px">'+l.ma+'</td><td>'+l.ten+'</td><td>'+CD_LABELS[l.congdoan]+'</td><td>'+fN(l.sl)+' '+l.dvt+'</td><td>'+(l.nguoi||'—')+'</td><td>'+fN(l.ton_sau)+'</td></tr>').join('');openPDF(buildPDF('NHẬT KÝ CÔNG ĐOẠN SX (ÉP-PHUN-IN) — XƯỞNG HẢI TÂN 2','Ngày: '+ds,'<table><thead><tr><th>STT</th><th>Giờ</th><th>Mã LK</th><th>Tên</th><th>Công đoạn</th><th>SL</th><th>Người TH</th><th>Tồn sau</th></tr></thead><tbody>'+rows+'</tbody></table>'));}
+
+// ── Nhập file công đoạn hàng ngày (giống Nhập Cần Hàng) ──
+let cdImportBuf=[];
+function handleCdFile(input){if(input.files[0])processCdFile(input.files[0]);}
+function processCdFile(file){
+  const name=(file.name||'').toLowerCase();
+  if(name.endsWith('.xlsx')||name.endsWith('.xls')){
+    const reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:false});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
+        buildCdFromRows(rows);
+      }catch(err){toast('Không đọc được file Excel!',true);}
+    };
+    reader.readAsArrayBuffer(file);
+  }else{
+    const reader=new FileReader();
+    reader.onload=function(e){
+      let text=e.target.result;
+      if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+      const lines=text.split(/\r?\n/).filter(l=>l.trim());
+      buildCdFromRows(lines.map(l=>splitCSVLine(l)));
+    };
+    reader.readAsText(file,'UTF-8');
+  }
+}
+function mapCongDoan(raw){
+  const s=String(raw||'').trim().toLowerCase();
+  if(s==='ep'||s==='ép'||s.includes('ep'))return 'ep';
+  if(s.includes('phun'))return 'phun';
+  if(s==='in'||s.includes('in'))return 'in';
+  return null;
+}
+function buildCdFromRows(rows){
+  if(!rows||rows.length<2){toast('File không hợp lệ!',true);return;}
+  const hdr=rows[0].map(h=>String(h||'').trim().toLowerCase());
+  const iMa=hdr.indexOf('ma hang'),iTen=hdr.indexOf('ten hang'),iSl=hdr.indexOf('so luong');
+  const iCd=hdr.findIndex(h=>h==='cong doan'||h==='cong  doan'||h==='congdoan');
+  if(iMa<0||iSl<0||iCd<0){toast('File thiếu cột "Ma hang", "So luong" hoặc "Cong doan"!',true);return;}
+  const map={};
+  for(let i=1;i<rows.length;i++){
+    const c=rows[i];
+    const ma=String(c[iMa]||'').trim();
+    if(!ma)continue;
+    const ten=iTen>=0?String(c[iTen]||'').trim():'';
+    const sl=parseSoLuong(c[iSl]);
+    const cd=mapCongDoan(c[iCd]);
+    if(!cd)continue;
+    const key=ma+'__'+cd;
+    if(!map[key])map[key]={ma,ten,congdoan:cd,sl:0,count:0};
+    map[key].sl+=sl;map[key].count++;
+  }
+  cdImportBuf=Object.values(map).map(r=>{
+    const it=items.find(x=>x.ma===r.ma);
+    return {ma:r.ma,ten:it?it.ten:r.ten,dvt:it?it.dvt:'',congdoan:r.congdoan,sl:r.sl,count:r.count,found:!!(it&&it.congDoan===true)};
+  }).sort((a,b)=>a.ma===b.ma?a.congdoan.localeCompare(b.congdoan):a.ma.localeCompare(b.ma));
+  renderCdImportPreview();
+}
+function renderCdImportPreview(){
+  const prev=document.getElementById('cd-import-preview');
+  if(!cdImportBuf.length){prev.innerHTML='';document.getElementById('btn-ok-cd-import').style.display='none';return;}
+  const foundCount=cdImportBuf.filter(r=>r.found).length;
+  const missCount=cdImportBuf.length-foundCount;
+  prev.innerHTML='<div style="padding:5px 0;font-size:11px;color:#666">Tìm thấy <b style="color:#1e8449">'+cdImportBuf.length+'</b> dòng'
+    +(missCount?' — <b style="color:#c0392b">'+missCount+'</b> mã không thuộc quy trình công đoạn (sẽ bỏ qua)':'')+':</div>'
+    +'<table style="width:100%;border-collapse:collapse;margin-top:4px"><thead><tr>'
+    +['Mã hàng','Tên hàng','Công đoạn','Tổng SL','Lượt'].map(h=>'<th style="background:#c0392b;color:#fff;padding:4px 6px;font-size:10px;text-align:left">'+h+'</th>').join('')
+    +'</tr></thead><tbody>'
+    +cdImportBuf.map(r=>'<tr style="'+(!r.found?'opacity:.5':'')+'">'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ma+(!r.found?' <span style="color:#c0392b">(không hợp lệ)</span>':'')+'</td>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ten.slice(0,26)+'</td>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+(CD_LABELS[r.congdoan]||r.congdoan)+'</td>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+fN(r.sl)+'</td>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:center">'+r.count+'</td>'
+      +'</tr>').join('')
+    +'</tbody></table>';
+  document.getElementById('btn-ok-cd-import').style.display=foundCount?'inline-flex':'none';
+}
+function confirmCdImport(){if(!requireAdmin())return;
+  const now=new Date(),ds=fISO(now),time=now.toTimeString().slice(0,5);
+  let added=0,missed=0;
+  cdImportBuf.forEach(r=>{
+    const it=items.find(x=>x.ma===r.ma);
+    if(!r.found||!it){missed++;return;}
+    const res=applyCdTransition(it,r.congdoan,r.sl,{date:ds,time,nguoi:'',note:'Nhập từ file công đoạn ('+r.count+' lượt)',force:true});
+    congDoanLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,congdoan:r.congdoan,sl:r.sl,nguoi:'',note:'Nhập từ file công đoạn ('+r.count+' lượt)',ton_sau:res.sau});
+    added++;
+  });
+  persist();closeModal('modal-cd-import');renderCongDoanWip();renderDayCongDoan();renderTonKho();updateSummary();
+  document.getElementById('cd-import-preview').innerHTML='';
+  document.getElementById('btn-ok-cd-import').style.display='none';
+  cdImportBuf=[];
+  toast('Đã cập nhật '+added+' dòng công đoạn'+(missed?', bỏ qua '+missed+' dòng không hợp lệ':''));
+}
+document.getElementById('cd-drop-zone') && document.getElementById('cd-drop-zone').addEventListener('drop',function(e){
+  e.preventDefault();const f=e.dataTransfer.files[0];if(f)processCdFile(f);
+});
+document.getElementById('cd-drop-zone') && document.getElementById('cd-drop-zone').addEventListener('dragover',e=>e.preventDefault());
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 function init(){
+  migratePKWData();
   const now=new Date();
   document.getElementById('hd-date').textContent=now.toLocaleDateString('vi-VN');
   document.getElementById('disp-date').textContent=fDate(curDate);
   document.getElementById('disp-date-sx').textContent=fDate(curDateSx);
   document.getElementById('disp-date-xh').textContent=fDate(curDateXh);
   document.getElementById('disp-date-nktp').textContent=fDate(curDateNktp);
+  document.getElementById('disp-date-cd').textContent=fDate(curDateCd);
   document.getElementById('disp-date-cp').textContent=fDate(curDateCp);
   document.getElementById('disp-month-dt').textContent=fMonthLabel(curMonthDt);
   document.getElementById('rq-ngay').value=fISO(now);
@@ -3527,6 +4126,8 @@ function init(){
   renderOrders();
   renderTV();
   renderDayNktp();
+  renderCongDoanWip();
+  renderDayCongDoan();
   updateAdminUI();
   tryAutoLogin();
   initCloudSync();
