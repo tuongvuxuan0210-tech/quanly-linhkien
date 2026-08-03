@@ -745,7 +745,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
 
 <!-- CÔNG ĐOẠN SX (Ép → Phun → In) — chỉ áp dụng cho linh kiện có cờ congDoan=true -->
 <div class="pg" id="pg-cd">
-  <div class="info-box">ℹ Linh kiện thuộc quy trình <b>Ép → Phun → In</b> được theo dõi riêng qua 2 kho trung gian (Ép, Phun). Khi hoàn thành công đoạn <b>In</b>, linh kiện tự động cộng vào <b>Kho Tổng</b> (sẵn sàng cho Kế Hoạch Lắp Ráp) — y hệt cơ chế nhập kho thông thường.</div>
+  <div class="info-box">ℹ <b>Mặc định mỗi linh kiện chỉ qua Ép rồi sẵn sàng lắp ráp ngay</b> (không cần đánh dấu gì thêm). Chỉ những linh kiện nào <b>thực sự cần Phun và/hoặc In</b> mới tick chọn ở bảng bên dưới — khi đó, linh kiện sẽ tạm giữ ở kho trung gian (Ép/Phun) cho đến khi hoàn thành bước cuối cùng thì mới tự động cộng vào <b>Kho Tổng</b> (sẵn sàng cho Kế Hoạch Lắp Ráp).</div>
 
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
     <b style="font-size:12px">📊 Tồn theo công đoạn hiện tại</b>
@@ -757,6 +757,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div class="tbl-wrap" style="margin-bottom:18px">
     <table><thead><tr>
       <th class="tl">Mã linh kiện</th><th class="tl">Tên linh kiện</th><th>Thuộc mã TP</th>
+      <th>Qua Phun?</th><th>Qua In?</th>
       <th>Tồn Ép (chờ Phun)</th><th>Tồn Phun (chờ In)</th><th>Tồn Kho Tổng (sẵn sàng lắp ráp)</th>
     </tr></thead><tbody id="cd-wip-body"></tbody></table>
   </div>
@@ -1482,7 +1483,7 @@ function migratePKWData(){
     bom_PKW4523.forEach(b=>{
       if(!items.find(it=>it.ma===b.ma)){
         const info=PKW_PARTS_PKW4523[b.ma];
-        items.push({ma:b.ma,ten:info,loai:'Đồ chơi',dvt:'cái',ton:0,min:0,congDoan:true,wip:{ep:0,phun:0,in:0}});
+        items.push({ma:b.ma,ten:info,loai:'Đồ chơi',dvt:'cái',ton:0,min:0,congDoan:true,needPhun:false,needIn:false,wip:{ep:0,phun:0,in:0}});
       }
     });
     products.push({ma:'PKW4523',ten:'PKW4523 (thành phẩm đồ chơi)',dvt:'con',ton:0,min:0,note:'Import từ Data_mới.xlsx',bom:bom_PKW4523});
@@ -1548,7 +1549,7 @@ function migratePKWData(){
     bom_PKW4962.forEach(b=>{
       if(!items.find(it=>it.ma===b.ma)){
         const info=PKW_PARTS_PKW4962[b.ma];
-        items.push({ma:b.ma,ten:info,loai:'Đồ chơi',dvt:'cái',ton:0,min:0,congDoan:true,wip:{ep:0,phun:0,in:0}});
+        items.push({ma:b.ma,ten:info,loai:'Đồ chơi',dvt:'cái',ton:0,min:0,congDoan:true,needPhun:false,needIn:false,wip:{ep:0,phun:0,in:0}});
       }
     });
     products.push({ma:'PKW4962',ten:'PKW4962 (thành phẩm đồ chơi)',dvt:'con',ton:0,min:0,note:'Import từ Data_mới.xlsx',bom:bom_PKW4962});
@@ -3882,7 +3883,16 @@ document.getElementById('canhang-drop-zone') && document.getElementById('canhang
 document.getElementById('canhang-drop-zone') && document.getElementById('canhang-drop-zone').addEventListener('dragover',e=>e.preventDefault());
 
 // ── CÔNG ĐOẠN SX: Ép → Phun → In (chỉ áp dụng cho items có congDoan=true) ──
-function migrateCdItem(it){if(!it.wip)it.wip={ep:0,phun:0,in:0};it.wip.ep=it.wip.ep||0;it.wip.phun=it.wip.phun||0;it.wip.in=it.wip.in||0;return it;}
+function migrateCdItem(it){if(!it.wip)it.wip={ep:0,phun:0,in:0};it.wip.ep=it.wip.ep||0;it.wip.phun=it.wip.phun||0;it.wip.in=it.wip.in||0;if(it.needPhun===undefined)it.needPhun=false;if(it.needIn===undefined)it.needIn=false;return it;}
+function cdFinalStage(it){if(it.needIn)return 'in';if(it.needPhun)return 'phun';return 'ep';}
+function cdSourceBucket(it,stage){if(stage==='ep')return null;if(stage==='phun')return 'ep';if(stage==='in')return it.needPhun?'phun':'ep';return null;}
+function toggleCdFlag(ma,flag,val){
+  if(!requireAdmin())return;
+  const it=items.find(x=>x.ma===ma);if(!it)return;
+  migrateCdItem(it);
+  it[flag]=val;
+  persist();renderCongDoanWip();
+}
 const CD_LABELS={ep:'Ép',phun:'Phun',in:'In'};
 function cdItems(){return items.filter(it=>it.congDoan===true);}
 function cdOptions(selMa){
@@ -3891,16 +3901,19 @@ function cdOptions(selMa){
 function renderCongDoanWip(){
   const body=document.getElementById('cd-wip-body');if(!body)return;
   const list=cdItems();
-  if(!list.length){body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:#999">Chưa có linh kiện nào thuộc quy trình công đoạn.</td></tr>';return;}
+  if(!list.length){body.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#999">Chưa có linh kiện nào thuộc quy trình công đoạn.</td></tr>';return;}
   body.innerHTML=list.map(it=>{
     migrateCdItem(it);migrateItemTon(it);
     const prod=products.find(p=>(p.bom||[]).some(b=>b.ma===it.ma));
+    const finalStage=cdFinalStage(it);
     return '<tr>'
       +'<td><div class="ma-code">'+it.ma+'</div></td>'
       +'<td class="item-ten">'+it.ten+'</td>'
       +'<td class="tc">'+(prod?prod.ma:'<span style="color:#ccc">—</span>')+'</td>'
-      +'<td class="tr" style="font-weight:700;color:#b7770d">'+fN(it.wip.ep)+'</td>'
-      +'<td class="tr" style="font-weight:700;color:#185FA5">'+fN(it.wip.phun)+'</td>'
+      +'<td class="tc"><label style="font-size:11px;white-space:nowrap"><input type="checkbox" '+(it.needPhun?'checked':'')+' onchange="toggleCdFlag(\''+it.ma+'\',\'needPhun\',this.checked)"> Qua Phun</label></td>'
+      +'<td class="tc"><label style="font-size:11px;white-space:nowrap"><input type="checkbox" '+(it.needIn?'checked':'')+' onchange="toggleCdFlag(\''+it.ma+'\',\'needIn\',this.checked)"> Qua In</label></td>'
+      +'<td class="tr" style="font-weight:700;color:#b7770d">'+(finalStage==='ep'?'<span style="color:#ccc">—</span>':fN(it.wip.ep))+'</td>'
+      +'<td class="tr" style="font-weight:700;color:#185FA5">'+(finalStage==='phun'||finalStage==='ep'?'<span style="color:#ccc">—</span>':fN(it.wip.phun))+'</td>'
       +'<td class="tr" style="font-weight:700;color:#1e8449">'+fN(getTon(it,'kt'))+'</td>'
       +'</tr>';
   }).join('');
@@ -3924,27 +3937,49 @@ function openCdModal(){if(!requireAdmin())return;
 function onPickCd(){
   const ma=document.getElementById('mcd-ma').value;
   const bar=document.getElementById('mcd-info-bar');
-  if(!ma){bar.style.display='none';return;}
+  const cdSel=document.getElementById('mcd-congdoan');
+  if(!ma){
+    bar.style.display='none';
+    cdSel.innerHTML='<option value="ep">Ép</option><option value="phun">Phun</option><option value="in">In</option>';
+    return;
+  }
   const it=items.find(x=>x.ma===ma);if(!it){bar.style.display='none';return;}
   migrateCdItem(it);migrateItemTon(it);
+  const finalStage=cdFinalStage(it);
+  const curVal=cdSel.value;
+  const opts=[];
+  opts.push('<option value="ep">Ép'+(finalStage==='ep'?' — hoàn tất, vào thẳng Kho Tổng':'')+'</option>');
+  if(it.needPhun)opts.push('<option value="phun">Phun'+(finalStage==='phun'?' — hoàn tất, vào Kho Tổng':'')+'</option>');
+  if(it.needIn)opts.push('<option value="in">In — hoàn tất, vào Kho Tổng</option>');
+  cdSel.innerHTML=opts.join('');
+  if([...cdSel.options].some(o=>o.value===curVal))cdSel.value=curVal;
   bar.style.display='flex';
-  bar.innerHTML='<b>Tồn Ép:</b> '+fN(it.wip.ep)+' &nbsp;&nbsp; <b>Tồn Phun:</b> '+fN(it.wip.phun)+' &nbsp;&nbsp; <b>Tồn Kho Tổng:</b> '+fN(getTon(it,'kt'))+' '+it.dvt;
+  let info='<b>Quy trình:</b> Ép'+(it.needPhun?' → Phun':'')+(it.needIn?' → In':'')+' → Kho Tổng &nbsp;&nbsp;';
+  info+='<b>Tồn Ép:</b> '+fN(it.wip.ep);
+  if(it.needPhun)info+=' &nbsp;&nbsp; <b>Tồn Phun:</b> '+fN(it.wip.phun);
+  info+=' &nbsp;&nbsp; <b>Tồn Kho Tổng:</b> '+fN(getTon(it,'kt'))+' '+it.dvt;
+  bar.innerHTML=info;
 }
 function applyCdTransition(it,congdoan,sl,opts){
-  // opts: {date, time, nguoi, note} — trả về {ok, sau, note_extra}
+  // opts: {date, time, nguoi, note, force} — trả về {ok, sau, need_confirm, msg}
   migrateCdItem(it);migrateItemTon(it);
-  let sau=0;
-  if(congdoan==='ep'){
-    it.wip.ep+=sl;sau=it.wip.ep;
-  }else if(congdoan==='phun'){
-    if(sl>it.wip.ep&&!opts.force)return {ok:false,need_confirm:true,msg:'Tồn Ép chỉ có '+fN(it.wip.ep)+', chuyển Phun '+fN(sl)+' sẽ làm tồn Ép âm.\nVẫn tiếp tục?'};
-    it.wip.ep=Math.max(0,it.wip.ep-sl);it.wip.phun+=sl;sau=it.wip.phun;
-  }else if(congdoan==='in'){
-    if(sl>it.wip.phun&&!opts.force)return {ok:false,need_confirm:true,msg:'Tồn Phun chỉ có '+fN(it.wip.phun)+', chuyển In '+fN(sl)+' sẽ làm tồn Phun âm.\nVẫn tiếp tục?'};
-    it.wip.phun=Math.max(0,it.wip.phun-sl);
+  const finalStage=cdFinalStage(it);
+  const srcBucket=cdSourceBucket(it,congdoan);
+  const isFinal=(congdoan===finalStage);
+  if(srcBucket){
+    if(sl>it.wip[srcBucket]&&!opts.force){
+      return {ok:false,need_confirm:true,msg:'Tồn '+CD_LABELS[srcBucket]+' chỉ có '+fN(it.wip[srcBucket])+', chuyển '+CD_LABELS[congdoan]+' '+fN(sl)+' sẽ làm tồn âm.\nVẫn tiếp tục?'};
+    }
+    it.wip[srcBucket]=Math.max(0,it.wip[srcBucket]-sl);
+  }
+  let sau;
+  if(isFinal){
     it.ton.kt=(it.ton.kt||0)+sl;
     sau=it.ton.kt;
-    gdLog.push({id:genId(),date:opts.date,time:opts.time,ma:it.ma,ten:it.ten,dvt:it.dvt,type:'nhap',sl,loc:'kt',from:'Hoàn thành công đoạn In',nguoi:opts.nguoi||'',ton_sau:getTon(it,'kt'),note:'Chuyển công đoạn: In → Kho Tổng'+(opts.note?' — '+opts.note:'')});
+    gdLog.push({id:genId(),date:opts.date,time:opts.time,ma:it.ma,ten:it.ten,dvt:it.dvt,type:'nhap',sl,loc:'kt',from:'Hoàn thành công đoạn '+CD_LABELS[congdoan],nguoi:opts.nguoi||'',ton_sau:getTon(it,'kt'),note:'Chuyển công đoạn: '+CD_LABELS[congdoan]+' → Kho Tổng (sẵn sàng lắp ráp)'+(opts.note?' — '+opts.note:'')});
+  }else{
+    it.wip[congdoan]=(it.wip[congdoan]||0)+sl;
+    sau=it.wip[congdoan];
   }
   return {ok:true,sau};
 }
@@ -3974,9 +4009,12 @@ function delCd(id){if(!requireAdmin())return;
   const it=items.find(x=>x.ma===l.ma);
   if(it){
     migrateCdItem(it);migrateItemTon(it);
-    if(l.congdoan==='ep')it.wip.ep=Math.max(0,it.wip.ep-l.sl);
-    else if(l.congdoan==='phun'){it.wip.phun=Math.max(0,it.wip.phun-l.sl);it.wip.ep+=l.sl;}
-    else if(l.congdoan==='in'){it.ton.kt=Math.max(0,(it.ton.kt||0)-l.sl);it.wip.phun+=l.sl;}
+    const finalStage=cdFinalStage(it);
+    const srcBucket=cdSourceBucket(it,l.congdoan);
+    const isFinal=(l.congdoan===finalStage);
+    if(isFinal){it.ton.kt=Math.max(0,(it.ton.kt||0)-l.sl);}
+    else{it.wip[l.congdoan]=Math.max(0,(it.wip[l.congdoan]||0)-l.sl);}
+    if(srcBucket){it.wip[srcBucket]=(it.wip[srcBucket]||0)+l.sl;}
   }
   congDoanLog=congDoanLog.filter(x=>x.id!==id);
   persist();renderCongDoanWip();renderDayCongDoan();renderTonKho();updateSummary();
