@@ -289,7 +289,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
 <div class="modal-overlay" id="modal-cd-import">
   <div class="modal-box" style="max-width:640px">
     <h3>Nhập file chuyển công đoạn <button onclick="closeModal(&#39;modal-cd-import&#39;)">✕</button></h3>
-    <div class="info-box">ℹ File có cột <b>Cong doan</b> (Ep/Phun/In): dùng đúng công đoạn ghi trong file. File <b>không có</b> cột này (VD: file "Cần Hàng" cân hàng từ trạm cân) sẽ được hiểu là toàn bộ <b>công đoạn Ép</b> — hệ thống tự route sang đúng bước tiếp theo (Phun/In/Kho Tổng) dựa theo cờ đã tick cho từng linh kiện. Các dòng cùng Mã hàng + Công đoạn sẽ được <b>cộng dồn</b>.</div>
+    <div class="info-box">ℹ <b>File nhật ký hàng ngày</b> (có cột Ma hang/So luong, VD: file "Cần Hàng"): mặc định tính là công đoạn Ép, tự route theo cờ Qua Phun/Qua In đã tick. <b>File bảng tổng theo mã</b> (có cột Ép/Phun/In riêng): Ép/Phun được đồng bộ đúng số hiện tại; cột In cộng thêm đúng phần chênh lệch vào Kho Tổng — không lo trùng lặp dù đồng bộ nhiều lần.</div>
     <div class="drop-zone" id="cd-drop-zone" onclick="document.getElementById(&#39;cd-file-in&#39;).click()">
       ⬆ Kéo thả file công đoạn (.xlsx, .csv) vào đây hoặc bấm để chọn file
     </div>
@@ -752,6 +752,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <div style="display:flex;gap:8px">
       <button class="btn btn-red" onclick="openModal('modal-cd-import')">⬆ Nhập file công đoạn</button>
       <button class="btn btn-green" onclick="openCdModal()">+ Ghi nhận thủ công</button>
+      <button class="btn" style="background:#fdecea;color:#c0392b;border:1px solid #f5c6c2" onclick="resetCongDoanData()">🗑️ Reset toàn bộ dữ liệu công đoạn</button>
     </div>
   </div>
   <div class="tbl-wrap" style="margin-bottom:18px">
@@ -3892,7 +3893,7 @@ document.getElementById('canhang-drop-zone') && document.getElementById('canhang
 document.getElementById('canhang-drop-zone') && document.getElementById('canhang-drop-zone').addEventListener('dragover',e=>e.preventDefault());
 
 // ── CÔNG ĐOẠN SX: Ép → Phun → In (chỉ áp dụng cho items có congDoan=true) ──
-function migrateCdItem(it){if(!it.wip)it.wip={ep:0,phun:0,in:0};it.wip.ep=it.wip.ep||0;it.wip.phun=it.wip.phun||0;it.wip.in=it.wip.in||0;if(it.needPhun===undefined)it.needPhun=false;if(it.needIn===undefined)it.needIn=false;return it;}
+function migrateCdItem(it){if(!it.wip)it.wip={ep:0,phun:0,in:0};it.wip.ep=it.wip.ep||0;it.wip.phun=it.wip.phun||0;it.wip.in=it.wip.in||0;if(it.needPhun===undefined)it.needPhun=false;if(it.needIn===undefined)it.needIn=false;if(it.cdInBaseline===undefined)it.cdInBaseline=0;return it;}
 function cdFinalStage(it){if(it.needIn)return 'in';if(it.needPhun)return 'phun';return 'ep';}
 function cdSourceBucket(it,stage){if(stage==='ep')return null;if(stage==='phun')return 'ep';if(stage==='in')return it.needPhun?'phun':'ep';return null;}
 function toggleCdFlag(ma,flag,val){
@@ -3906,6 +3907,24 @@ const CD_LABELS={ep:'Ép',phun:'Phun',in:'In',sync:'🔄 Đồng bộ'};
 function cdItems(){return items.filter(it=>it.congDoan===true);}
 function cdOptions(selMa){
   return '<option value="">-- Chọn linh kiện --</option>'+cdItems().map(it=>'<option value="'+it.ma+'"'+(it.ma===selMa?' selected':'')+'>['+it.ma+'] '+it.ten+'</option>').join('');
+}
+function resetCongDoanData(){
+  if(!requireAdmin())return;
+  const list=cdItems();
+  if(!list.length){toast('Không có linh kiện nào thuộc quy trình công đoạn để reset!',true);return;}
+  if(!confirm('⚠️ RESET TOÀN BỘ dữ liệu công đoạn (Ép/Phun/In) cho '+list.length+' linh kiện thuộc PKW4523/PKW4962?\n\n- Tồn Ép, Tồn Phun sẽ về 0\n- Phần đã cộng vào Kho Tổng từ công đoạn In cũng sẽ bị trừ lại về 0\n- Toàn bộ lịch sử ghi nhận công đoạn sẽ bị xóa\n\nThao tác này KHÔNG THỂ hoàn tác. Tiếp tục?'))return;
+  if(!confirm('Xác nhận lần 2: bạn chắc chắn muốn xóa sạch và reset về 0 chứ?'))return;
+  list.forEach(it=>{
+    migrateCdItem(it);migrateItemTon(it);
+    it.wip.ep=0;it.wip.phun=0;it.wip.in=0;it.cdInBaseline=0;
+    it.ton.kt=0;it.ton.x1=0;it.ton.x2=0;
+  });
+  const cdMaSet={};list.forEach(it=>cdMaSet[it.ma]=true);
+  gdLog=gdLog.filter(l=>!(cdMaSet[l.ma]&&l.from==='Đồng bộ công đoạn In (bảng tổng)'));
+  congDoanLog=[];
+  persist();
+  renderCongDoanWip();renderDayCongDoan();renderTonKho();renderKhShortage();updateSummary();
+  toast('✅ Đã reset toàn bộ dữ liệu công đoạn cho '+list.length+' linh kiện — sẵn sàng nhập lại từ đầu.');
 }
 function renderCongDoanWip(){
   const body=document.getElementById('cd-wip-body');if(!body)return;
@@ -4137,12 +4156,15 @@ function buildCdWideImport(rows){
   cdImportBuf=rows.map(r=>{
     const it=items.find(x=>x.ma===r.ma);
     const found=!!(it&&it.congDoan===true);
-    if(found)migrateCdItem(it);
+    if(found){migrateCdItem(it);migrateItemTon(it);}
+    const inOld=found?(it.cdInBaseline||0):0;
+    const inDelta=(r.in!==null&&found)?(r.in-inOld):0;
     return {
       ma:r.ma, ten:it?it.ten:r.ten, dvt:it?it.dvt:'', found,
       epOld: found?it.wip.ep:0, epNew: r.ep,
       phunOld: found?it.wip.phun:0, phunNew: r.phun,
-      inVal: r.in
+      inVal: r.in, inOld, inDelta,
+      ktOld: found?getTon(it,'kt'):0
     };
   }).sort((a,b)=>a.ma.localeCompare(b.ma));
   renderCdImportPreview();
@@ -4189,20 +4211,20 @@ function renderCdImportPreview(){
   const foundCount=cdImportBuf.filter(r=>r.found).length;
   const missCount=cdImportBuf.length-foundCount;
   if(cdImportMode==='wide'){
-    prev.innerHTML='<div style="padding:5px 0;font-size:11px;color:#666">📊 Nhận diện <b>bảng tổng theo mã</b> — sẽ <b style="color:#c0392b">GHI ĐÈ</b> đúng bằng số trong file (không cộng dồn). Tìm thấy <b style="color:#1e8449">'+cdImportBuf.length+'</b> mã'
+    prev.innerHTML='<div style="padding:5px 0;font-size:11px;color:#666">📊 Nhận diện <b>bảng tổng theo mã</b> — Ép/Phun sẽ <b style="color:#c0392b">GHI ĐÈ</b> đúng bằng số trong file; cột In sẽ <b style="color:#1e8449">CỘNG THÊM phần chênh lệch</b> vào Kho Tổng (so với lần đồng bộ trước, không trùng lặp). Tìm thấy <b style="color:#1e8449">'+cdImportBuf.length+'</b> mã'
       +(missCount?' — <b style="color:#c0392b">'+missCount+'</b> mã không thuộc quy trình công đoạn (sẽ bỏ qua)':'')+':</div>'
       +'<table style="width:100%;border-collapse:collapse;margin-top:4px"><thead><tr>'
-      +['Mã hàng','Tên hàng','Tồn Ép (cũ → mới)','Tồn Phun (cũ → mới)','In (tham khảo)'].map(h=>'<th style="background:#c0392b;color:#fff;padding:4px 6px;font-size:10px;text-align:left">'+h+'</th>').join('')
+      +['Mã hàng','Tên hàng','Tồn Ép (cũ → mới)','Tồn Phun (cũ → mới)','In → Kho Tổng'].map(h=>'<th style="background:#c0392b;color:#fff;padding:4px 6px;font-size:10px;text-align:left">'+h+'</th>').join('')
       +'</tr></thead><tbody>'
       +cdImportBuf.map(r=>'<tr style="'+(!r.found?'opacity:.5':'')+'">'
         +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ma+(!r.found?' <span style="color:#c0392b">(không hợp lệ)</span>':'')+'</td>'
         +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ten.slice(0,24)+'</td>'
         +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+(r.epNew===null?'<span style="color:#ccc">—</span>':fN(r.epOld)+' → <b>'+fN(r.epNew)+'</b>')+'</td>'
         +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+(r.phunNew===null?'<span style="color:#ccc">—</span>':fN(r.phunOld)+' → <b>'+fN(r.phunNew)+'</b>')+'</td>'
-        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right;color:#999">'+(r.inVal===null?'—':fN(r.inVal))+'</td>'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+(r.inVal===null?'<span style="color:#ccc">—</span>':(r.inDelta!==0?'Kho Tổng '+fN(r.ktOld)+' → <b style="color:#1e8449">'+fN(r.ktOld+r.inDelta)+'</b> (+'+fN(r.inDelta)+')':'<span style="color:#999">không đổi</span>'))+'</td>'
         +'</tr>').join('')
       +'</tbody></table>'
-      +'<div style="padding:6px 0;font-size:10.5px;color:#b7770d">⚠ Cột "In" chỉ để tham khảo, KHÔNG tự động cộng vào Kho Tổng (vì Kho Tổng đã được cập nhật từ nhiều nguồn khác — tránh trùng số liệu).</div>';
+      +'<div style="padding:6px 0;font-size:10.5px;color:#999">ℹ Lần đầu đồng bộ, toàn bộ số ở cột In sẽ được cộng vào Kho Tổng. Các lần sau chỉ cộng đúng phần TĂNG THÊM so với lần trước — không lo bị cộng trùng.</div>';
   }else{
     prev.innerHTML='<div style="padding:5px 0;font-size:11px;color:#666">Tìm thấy <b style="color:#1e8449">'+cdImportBuf.length+'</b> dòng'
       +(missCount?' — <b style="color:#c0392b">'+missCount+'</b> mã không thuộc quy trình công đoạn (sẽ bỏ qua)':'')+':</div>'
@@ -4226,10 +4248,16 @@ function confirmCdImport(){if(!requireAdmin())return;
     cdImportBuf.forEach(r=>{
       const it=items.find(x=>x.ma===r.ma);
       if(!r.found||!it){missed++;return;}
-      migrateCdItem(it);
+      migrateCdItem(it);migrateItemTon(it);
       const notes=[];
       if(r.epNew!==null&&r.epNew!==r.epOld){it.wip.ep=r.epNew;notes.push('Ép: '+fN(r.epOld)+'→'+fN(r.epNew));}
       if(r.phunNew!==null&&r.phunNew!==r.phunOld){it.wip.phun=r.phunNew;notes.push('Phun: '+fN(r.phunOld)+'→'+fN(r.phunNew));}
+      if(r.inVal!==null&&r.inDelta!==0){
+        it.ton.kt=Math.max(0,(it.ton.kt||0)+r.inDelta);
+        it.cdInBaseline=r.inVal;
+        notes.push('In→Kho Tổng: +'+fN(r.inDelta));
+        gdLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,type:'nhap',sl:Math.abs(r.inDelta),loc:'kt',from:'Đồng bộ công đoạn In (bảng tổng)',nguoi:'',ton_sau:getTon(it,'kt'),note:'Đồng bộ từ file tổng — In tăng thêm '+fN(r.inDelta)});
+      }
       if(!notes.length)return;
       congDoanLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,congdoan:'sync',sl:0,nguoi:'',note:'Đồng bộ từ bảng tổng: '+notes.join(', '),ton_sau:0});
       added++;
