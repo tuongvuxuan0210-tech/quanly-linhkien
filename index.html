@@ -1166,7 +1166,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     </div>
     <button class="btn btn-green" onclick="savePlan()" style="margin-left:auto">💾 Lưu kế hoạch</button>
   </div>
-  <div class="info-box">ℹ Nhập số lượng từng thành phẩm dự kiến sản xuất cho ngày tiếp theo. Hệ thống sẽ tự tính tổng linh kiện cần dùng theo định mức BOM, so với tồn kho hiện tại, <b>đồng thời giữ lại đúng mức tồn tối thiểu (an toàn)</b> bạn đã đặt ở Danh Mục — nếu sản xuất xong mà tồn còn lại thấp hơn mức tối thiểu, hệ thống vẫn báo <b>thiếu</b> phần chênh lệch đó để bạn đặt hàng bù, không chỉ tính đủ vừa khít cho kế hoạch.</div>
+  <div class="info-box">ℹ Nhập số lượng từng thành phẩm dự kiến sản xuất cho ngày tiếp theo. Hệ thống sẽ tự tính tổng linh kiện cần dùng theo định mức BOM, so với tồn kho hiện tại, <b>đồng thời giữ lại đúng mức tồn tối thiểu (an toàn)</b> bạn đã đặt ở Danh Mục — nếu sản xuất xong mà tồn còn lại thấp hơn mức tối thiểu, hệ thống vẫn báo <b>thiếu</b> phần chênh lệch đó để bạn đặt hàng bù, không chỉ tính đủ vừa khít cho kế hoạch. Với linh kiện thuộc quy trình Ép-Phun-In, bảng còn hiện thêm số lượng <b>đang xử lý ở Ép/Phun</b> — nếu thiếu nhưng hàng đang xử lý đủ bù, trạng thái sẽ hiện riêng để phân biệt với thiếu thật sự.</div>
 
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
     <b style="font-size:12px">Kế hoạch sản xuất theo thành phẩm</b>
@@ -1188,8 +1188,8 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div class="tbl-wrap">
     <table><thead><tr>
       <th style="width:34px">STT</th><th class="tl">Mã linh kiện</th><th class="tl">Tên linh kiện</th>
-      <th>ĐVT</th><th>Xưởng cần</th><th>Tồn hiện tại</th><th>Cần dùng theo KH</th><th>Mức tối thiểu (an toàn)</th><th>Còn lại sau SX</th><th>Cần đặt thêm</th><th>Trạng thái</th>
-    </tr></thead><tbody id="kh-shortage-body"><tr><td colspan="11" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu — thêm ít nhất 1 dòng thành phẩm ở trên.</td></tr></tbody></table>
+      <th>ĐVT</th><th>Xưởng cần</th><th>Tồn hiện tại</th><th>Đang ở Ép</th><th>Đang ở Phun</th><th>Cần dùng theo KH</th><th>Mức tối thiểu (an toàn)</th><th>Còn lại sau SX</th><th>Cần đặt thêm</th><th>Trạng thái</th>
+    </tr></thead><tbody id="kh-shortage-body"><tr><td colspan="13" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu — thêm ít nhất 1 dòng thành phẩm ở trên.</td></tr></tbody></table>
   </div>
   </div>
 
@@ -3552,13 +3552,20 @@ function renderKhShortage(){
     const conLai=ton-can; // tồn còn lại sau khi dùng cho kế hoạch (có thể âm)
     const thieu=Math.max(0,can+min-ton); // phải đặt thêm để dùng đủ kế hoạch VÀ vẫn giữ được mức tồn an toàn (min)
     if(thieu>0)thieuCount++;
-    return {ma,loc,ten,dvt,ton,min,can,conLai,thieu};
+    const hasCd=!!(it&&it.congDoan===true);
+    let epWip=null,phunWip=null;
+    if(hasCd){migrateCdItem(it);epWip=it.wip.ep||0;phunWip=it.wip.phun||0;}
+    const pipelineCover=hasCd&&thieu>0&&((epWip||0)+(phunWip||0))>=thieu;
+    return {ma,loc,ten,dvt,ton,min,can,conLai,thieu,hasCd,epWip,phunWip,pipelineCover};
   }).sort((a,b)=>b.thieu-a.thieu||a.ma.localeCompare(b.ma));
   document.getElementById('kh-sum-sp').textContent=fN(totalSP);
   document.getElementById('kh-sum-lk').textContent=keys.length;
   document.getElementById('kh-sum-thieu').textContent=thieuCount;
   document.getElementById('kh-shortage-body').innerHTML=list.length?list.map((r,i)=>{
-    const st=r.thieu>0?'<span class="sb sb-red">Thiếu</span>':'<span class="sb sb-green">Đủ</span>';
+    let st;
+    if(r.thieu<=0)st='<span class="sb sb-green">Đủ</span>';
+    else if(r.pipelineCover)st='<span class="sb sb-blue">Thiếu — nhưng đang xử lý đủ bù</span>';
+    else st='<span class="sb sb-red">Thiếu</span>';
     return '<tr>'
       +'<td class="tc">'+(i+1)+'</td>'
       +'<td><div class="ma-code">'+r.ma+'</div></td>'
@@ -3566,29 +3573,31 @@ function renderKhShortage(){
       +'<td class="tc">'+r.dvt+'</td>'
       +'<td class="tc"><span style="background:#eef2f6;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+LOC_LABELS[r.loc]+'</span></td>'
       +'<td class="tr">'+fN(r.ton)+'</td>'
+      +'<td class="tr" style="color:#b7770d">'+(r.hasCd?fN(r.epWip):'<span style="color:#ddd">—</span>')+'</td>'
+      +'<td class="tr" style="color:#185FA5">'+(r.hasCd?fN(r.phunWip):'<span style="color:#ddd">—</span>')+'</td>'
       +'<td class="tr" style="font-weight:700">'+fN(r.can)+'</td>'
       +'<td class="tr" style="color:#999">'+fN(r.min)+'</td>'
       +'<td class="tr" style="'+(r.conLai<r.min?'color:#c0392b':'color:#1e8449')+'">'+fN(r.conLai)+'</td>'
       +'<td class="tr" style="font-weight:700;color:'+(r.thieu>0?'#c0392b':'#1e8449')+'">'+fN(r.thieu)+'</td>'
       +'<td class="tc">'+st+'</td>'
       +'</tr>';
-  }).join('') : '<tr><td colspan="11" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu — thêm ít nhất 1 dòng thành phẩm ở trên.</td></tr>';
+  }).join('') : '<tr><td colspan="13" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu — thêm ít nhất 1 dòng thành phẩm ở trên.</td></tr>';
   window._khShortageList=list;
 }
 
 function exportKhCSV(){
   const list=(window._khShortageList||[]).filter(r=>r.thieu>0);
   if(!list.length){toast('Không có linh kiện nào bị thiếu để xuất!',true);return;}
-  const r=[['Mã linh kiện','Tên linh kiện','ĐVT','Xưởng cần','Tồn hiện tại','Cần dùng theo KH','Mức tối thiểu (an toàn)','Số lượng cần đặt thêm']];
-  list.forEach(x=>r.push([x.ma,x.ten,x.dvt,LOC_LABELS[x.loc],x.ton,x.can,x.min,x.thieu]));
+  const r=[['Mã linh kiện','Tên linh kiện','ĐVT','Xưởng cần','Tồn hiện tại','Đang ở Ép','Đang ở Phun','Cần dùng theo KH','Mức tối thiểu (an toàn)','Số lượng cần đặt thêm']];
+  list.forEach(x=>r.push([x.ma,x.ten,x.dvt,LOC_LABELS[x.loc],x.ton,x.hasCd?x.epWip:'',x.hasCd?x.phunWip:'',x.can,x.min,x.thieu]));
   dlCSV(r,'linhkien-thieu-'+curPlanDate+'.csv');
   toast('Đã xuất file linh kiện thiếu');
 }
 function exportKhPDF(){
   const list=(window._khShortageList||[]).filter(r=>r.thieu>0);
   if(!list.length){toast('Không có linh kiện nào bị thiếu để xuất!',true);return;}
-  const rows=list.map((x,i)=>'<tr><td>'+(i+1)+'</td><td style="font-size:9px">'+x.ma+'</td><td>'+x.ten+'</td><td>'+x.dvt+'</td><td>'+LOC_LABELS[x.loc]+'</td><td>'+fN(x.ton)+'</td><td>'+fN(x.can)+'</td><td>'+fN(x.min)+'</td><td style="font-weight:700">'+fN(x.thieu)+'</td></tr>').join('');
-  openPDF(buildPDF('DANH SÁCH LINH KIỆN CẦN ĐẶT THÊM — XƯỞNG HẢI TÂN 2','Theo kế hoạch sản xuất ngày: '+curPlanDate+' (đã tính kèm mức tồn an toàn)','<table><thead><tr><th>STT</th><th>Mã linh kiện</th><th>Tên</th><th>ĐVT</th><th>Xưởng cần</th><th>Tồn hiện tại</th><th>Cần dùng theo KH</th><th>Mức tối thiểu</th><th>Cần đặt thêm</th></tr></thead><tbody>'+rows+'</tbody></table>'));
+  const rows=list.map((x,i)=>'<tr><td>'+(i+1)+'</td><td style="font-size:9px">'+x.ma+'</td><td>'+x.ten+'</td><td>'+x.dvt+'</td><td>'+LOC_LABELS[x.loc]+'</td><td>'+fN(x.ton)+'</td><td>'+(x.hasCd?fN(x.epWip):'—')+'</td><td>'+(x.hasCd?fN(x.phunWip):'—')+'</td><td>'+fN(x.can)+'</td><td>'+fN(x.min)+'</td><td style="font-weight:700">'+fN(x.thieu)+'</td></tr>').join('');
+  openPDF(buildPDF('DANH SÁCH LINH KIỆN CẦN ĐẶT THÊM — XƯỞNG HẢI TÂN 2','Theo kế hoạch sản xuất ngày: '+curPlanDate+' (đã tính kèm mức tồn an toàn)','<table><thead><tr><th>STT</th><th>Mã linh kiện</th><th>Tên</th><th>ĐVT</th><th>Xưởng cần</th><th>Tồn hiện tại</th><th>Đang ở Ép</th><th>Đang ở Phun</th><th>Cần dùng theo KH</th><th>Mức tối thiểu</th><th>Cần đặt thêm</th></tr></thead><tbody>'+rows+'</tbody></table>'));
 }
 
 // ── CẤP PHÁT XƯỞNG (chuyển linh kiện từ Kho Tổng sang Xưởng 1/2) ─────────────
