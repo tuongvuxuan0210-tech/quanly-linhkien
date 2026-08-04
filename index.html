@@ -3893,7 +3893,7 @@ function toggleCdFlag(ma,flag,val){
   it[flag]=val;
   persist();renderCongDoanWip();
 }
-const CD_LABELS={ep:'Ép',phun:'Phun',in:'In'};
+const CD_LABELS={ep:'Ép',phun:'Phun',in:'In',sync:'🔄 Đồng bộ'};
 function cdItems(){return items.filter(it=>it.congDoan===true);}
 function cdOptions(selMa){
   return '<option value="">-- Chọn linh kiện --</option>'+cdItems().map(it=>'<option value="'+it.ma+'"'+(it.ma===selMa?' selected':'')+'>['+it.ma+'] '+it.ten+'</option>').join('');
@@ -4044,6 +4044,7 @@ function exportCdPDF(){const ds=fISO(curDateCd);const rows=congDoanLog.filter(l=
 
 // ── Nhập file công đoạn hàng ngày (giống Nhập Cần Hàng) ──
 let cdImportBuf=[];
+let cdImportMode='long'; // 'long' = nhật ký hàng ngày (cộng dồn) | 'wide' = bảng tổng theo mã (ghi đè)
 function handleCdFile(input){if(input.files[0])processCdFile(input.files[0]);}
 function processCdFile(file){
   const name=(file.name||'').toLowerCase();
@@ -4052,9 +4053,9 @@ function processCdFile(file){
     reader.onload=function(e){
       try{
         const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:false});
-        const ws=wb.Sheets[wb.SheetNames[0]];
-        const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
-        buildCdFromRows(rows);
+        // Gom TẤT CẢ sheet lại — file có thể có nhiều sheet (VD: 1 sheet/1 mã thành phẩm)
+        const allRowsPerSheet=wb.SheetNames.map(name=>XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:''}));
+        dispatchCdImport(allRowsPerSheet);
       }catch(err){toast('Không đọc được file Excel!',true);}
     };
     reader.readAsArrayBuffer(file);
@@ -4064,10 +4065,78 @@ function processCdFile(file){
       let text=e.target.result;
       if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
       const lines=text.split(/\r?\n/).filter(l=>l.trim());
-      buildCdFromRows(lines.map(l=>splitCSVLine(l)));
+      dispatchCdImport([lines.map(l=>splitCSVLine(l))]);
     };
     reader.readAsText(file,'UTF-8');
   }
+}
+// Phát hiện định dạng của 1 sheet: 'long' (Ma hang/So luong[/Cong doan] theo dòng) hay 'wide' (cột riêng Ép/Phun/In theo mã)
+function detectCdSheetFormat(rows){
+  if(!rows||rows.length<2)return null;
+  const hdr=rows[0].map(h=>String(h||'').trim().toLowerCase());
+  const hasEp=hdr.some(h=>h==='ép'||h==='ep');
+  const hasPhun=hdr.some(h=>h.includes('phun'));
+  const hasIn=hdr.some(h=>h==='in');
+  if(hasEp&&(hasPhun||hasIn))return 'wide';
+  if(hdr.includes('ma hang')&&hdr.includes('so luong'))return 'long';
+  return null;
+}
+function dispatchCdImport(sheetsRows){
+  const longRows=[], wideRows=[];
+  let longHdrRow=null;
+  sheetsRows.forEach(rows=>{
+    const fmt=detectCdSheetFormat(rows);
+    if(fmt==='long'){
+      if(!longHdrRow)longHdrRow=rows[0];
+      longRows.push(...rows.slice(1));
+    }else if(fmt==='wide'){
+      wideRows.push(...parseCdWideSheet(rows));
+    }
+  });
+  if(wideRows.length&&longRows.length){
+    toast('File có cả 2 định dạng — mình ưu tiên xử lý bảng TỔNG (Ép/Phun/In theo mã) trước.');
+  }
+  if(wideRows.length){
+    buildCdWideImport(wideRows);
+  }else if(longHdrRow){
+    buildCdFromRows([longHdrRow,...longRows]);
+  }else{
+    toast('Không nhận diện được định dạng file! Cần cột "Ma hang"+"So luong" (dạng nhật ký hàng ngày) hoặc cột "Ép"/"Phun"/"In" (dạng bảng tổng theo mã).',true);
+  }
+}
+// Parse 1 sheet dạng bảng tổng: cột A = Mã, cột B = Tên, các cột còn lại = Ép/Phun/In (giá trị TỒN TỔNG hiện tại, không phải cộng dồn)
+function parseCdWideSheet(rows){
+  const hdr=rows[0].map(h=>String(h||'').trim().toLowerCase());
+  const iEp=hdr.findIndex(h=>h==='ép'||h==='ep');
+  const iPhun=hdr.findIndex(h=>h.includes('phun'));
+  const iIn=hdr.findIndex(h=>h==='in');
+  const out=[];
+  for(let i=1;i<rows.length;i++){
+    const c=rows[i];
+    const ma=String(c[0]||'').trim();
+    if(!ma)continue;
+    const ten=String(c[1]||'').trim();
+    const ep=iEp>=0?parseSoLuong(c[iEp]):null;
+    const phun=iPhun>=0?parseSoLuong(c[iPhun]):null;
+    const inv=iIn>=0?parseSoLuong(c[iIn]):null;
+    out.push({ma,ten,ep,phun,in:inv});
+  }
+  return out;
+}
+function buildCdWideImport(rows){
+  cdImportMode='wide';
+  cdImportBuf=rows.map(r=>{
+    const it=items.find(x=>x.ma===r.ma);
+    const found=!!(it&&it.congDoan===true);
+    if(found)migrateCdItem(it);
+    return {
+      ma:r.ma, ten:it?it.ten:r.ten, dvt:it?it.dvt:'', found,
+      epOld: found?it.wip.ep:0, epNew: r.ep,
+      phunOld: found?it.wip.phun:0, phunNew: r.phun,
+      inVal: r.in
+    };
+  }).sort((a,b)=>a.ma.localeCompare(b.ma));
+  renderCdImportPreview();
 }
 function mapCongDoan(raw){
   const s=String(raw||'').trim().toLowerCase();
@@ -4077,6 +4146,7 @@ function mapCongDoan(raw){
   return null;
 }
 function buildCdFromRows(rows){
+  cdImportMode='long';
   if(!rows||rows.length<2){toast('File không hợp lệ!',true);return;}
   const hdr=rows[0].map(h=>String(h||'').trim().toLowerCase());
   const iMa=hdr.indexOf('ma hang'),iTen=hdr.indexOf('ten hang'),iSl=hdr.indexOf('so luong');
@@ -4109,36 +4179,66 @@ function renderCdImportPreview(){
   if(!cdImportBuf.length){prev.innerHTML='';document.getElementById('btn-ok-cd-import').style.display='none';return;}
   const foundCount=cdImportBuf.filter(r=>r.found).length;
   const missCount=cdImportBuf.length-foundCount;
-  prev.innerHTML='<div style="padding:5px 0;font-size:11px;color:#666">Tìm thấy <b style="color:#1e8449">'+cdImportBuf.length+'</b> dòng'
-    +(missCount?' — <b style="color:#c0392b">'+missCount+'</b> mã không thuộc quy trình công đoạn (sẽ bỏ qua)':'')+':</div>'
-    +'<table style="width:100%;border-collapse:collapse;margin-top:4px"><thead><tr>'
-    +['Mã hàng','Tên hàng','Công đoạn','Tổng SL','Lượt'].map(h=>'<th style="background:#c0392b;color:#fff;padding:4px 6px;font-size:10px;text-align:left">'+h+'</th>').join('')
-    +'</tr></thead><tbody>'
-    +cdImportBuf.map(r=>'<tr style="'+(!r.found?'opacity:.5':'')+'">'
-      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ma+(!r.found?' <span style="color:#c0392b">(không hợp lệ)</span>':'')+'</td>'
-      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ten.slice(0,26)+'</td>'
-      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+(CD_LABELS[r.congdoan]||r.congdoan)+'</td>'
-      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+fN(r.sl)+'</td>'
-      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:center">'+r.count+'</td>'
-      +'</tr>').join('')
-    +'</tbody></table>';
+  if(cdImportMode==='wide'){
+    prev.innerHTML='<div style="padding:5px 0;font-size:11px;color:#666">📊 Nhận diện <b>bảng tổng theo mã</b> — sẽ <b style="color:#c0392b">GHI ĐÈ</b> đúng bằng số trong file (không cộng dồn). Tìm thấy <b style="color:#1e8449">'+cdImportBuf.length+'</b> mã'
+      +(missCount?' — <b style="color:#c0392b">'+missCount+'</b> mã không thuộc quy trình công đoạn (sẽ bỏ qua)':'')+':</div>'
+      +'<table style="width:100%;border-collapse:collapse;margin-top:4px"><thead><tr>'
+      +['Mã hàng','Tên hàng','Tồn Ép (cũ → mới)','Tồn Phun (cũ → mới)','In (tham khảo)'].map(h=>'<th style="background:#c0392b;color:#fff;padding:4px 6px;font-size:10px;text-align:left">'+h+'</th>').join('')
+      +'</tr></thead><tbody>'
+      +cdImportBuf.map(r=>'<tr style="'+(!r.found?'opacity:.5':'')+'">'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ma+(!r.found?' <span style="color:#c0392b">(không hợp lệ)</span>':'')+'</td>'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ten.slice(0,24)+'</td>'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+(r.epNew===null?'<span style="color:#ccc">—</span>':fN(r.epOld)+' → <b>'+fN(r.epNew)+'</b>')+'</td>'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+(r.phunNew===null?'<span style="color:#ccc">—</span>':fN(r.phunOld)+' → <b>'+fN(r.phunNew)+'</b>')+'</td>'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right;color:#999">'+(r.inVal===null?'—':fN(r.inVal))+'</td>'
+        +'</tr>').join('')
+      +'</tbody></table>'
+      +'<div style="padding:6px 0;font-size:10.5px;color:#b7770d">⚠ Cột "In" chỉ để tham khảo, KHÔNG tự động cộng vào Kho Tổng (vì Kho Tổng đã được cập nhật từ nhiều nguồn khác — tránh trùng số liệu).</div>';
+  }else{
+    prev.innerHTML='<div style="padding:5px 0;font-size:11px;color:#666">Tìm thấy <b style="color:#1e8449">'+cdImportBuf.length+'</b> dòng'
+      +(missCount?' — <b style="color:#c0392b">'+missCount+'</b> mã không thuộc quy trình công đoạn (sẽ bỏ qua)':'')+':</div>'
+      +'<table style="width:100%;border-collapse:collapse;margin-top:4px"><thead><tr>'
+      +['Mã hàng','Tên hàng','Công đoạn','Tổng SL','Lượt'].map(h=>'<th style="background:#c0392b;color:#fff;padding:4px 6px;font-size:10px;text-align:left">'+h+'</th>').join('')
+      +'</tr></thead><tbody>'
+      +cdImportBuf.map(r=>'<tr style="'+(!r.found?'opacity:.5':'')+'">'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ma+(!r.found?' <span style="color:#c0392b">(không hợp lệ)</span>':'')+'</td>'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ten.slice(0,26)+'</td>'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+(CD_LABELS[r.congdoan]||r.congdoan)+'</td>'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+fN(r.sl)+'</td>'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:center">'+r.count+'</td>'
+        +'</tr>').join('');
+  }
   document.getElementById('btn-ok-cd-import').style.display=foundCount?'inline-flex':'none';
 }
 function confirmCdImport(){if(!requireAdmin())return;
   const now=new Date(),ds=fISO(now),time=now.toTimeString().slice(0,5);
   let added=0,missed=0;
-  cdImportBuf.forEach(r=>{
-    const it=items.find(x=>x.ma===r.ma);
-    if(!r.found||!it){missed++;return;}
-    const res=applyCdTransition(it,r.congdoan,r.sl,{date:ds,time,nguoi:'',note:'Nhập từ file công đoạn ('+r.count+' lượt)',force:true});
-    congDoanLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,congdoan:r.congdoan,sl:r.sl,nguoi:'',note:'Nhập từ file công đoạn ('+r.count+' lượt)',ton_sau:res.sau});
-    added++;
-  });
+  if(cdImportMode==='wide'){
+    cdImportBuf.forEach(r=>{
+      const it=items.find(x=>x.ma===r.ma);
+      if(!r.found||!it){missed++;return;}
+      migrateCdItem(it);
+      const notes=[];
+      if(r.epNew!==null&&r.epNew!==r.epOld){it.wip.ep=r.epNew;notes.push('Ép: '+fN(r.epOld)+'→'+fN(r.epNew));}
+      if(r.phunNew!==null&&r.phunNew!==r.phunOld){it.wip.phun=r.phunNew;notes.push('Phun: '+fN(r.phunOld)+'→'+fN(r.phunNew));}
+      if(!notes.length)return;
+      congDoanLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,congdoan:'sync',sl:0,nguoi:'',note:'Đồng bộ từ bảng tổng: '+notes.join(', '),ton_sau:0});
+      added++;
+    });
+  }else{
+    cdImportBuf.forEach(r=>{
+      const it=items.find(x=>x.ma===r.ma);
+      if(!r.found||!it){missed++;return;}
+      const res=applyCdTransition(it,r.congdoan,r.sl,{date:ds,time,nguoi:'',note:'Nhập từ file công đoạn ('+r.count+' lượt)',force:true});
+      congDoanLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,congdoan:r.congdoan,sl:r.sl,nguoi:'',note:'Nhập từ file công đoạn ('+r.count+' lượt)',ton_sau:res.sau});
+      added++;
+    });
+  }
   persist();closeModal('modal-cd-import');renderCongDoanWip();renderDayCongDoan();renderTonKho();updateSummary();
   document.getElementById('cd-import-preview').innerHTML='';
   document.getElementById('btn-ok-cd-import').style.display='none';
   cdImportBuf=[];
-  toast('Đã cập nhật '+added+' dòng công đoạn'+(missed?', bỏ qua '+missed+' dòng không hợp lệ':''));
+  toast('Đã cập nhật '+added+' mã'+(missed?', bỏ qua '+missed+' mã không hợp lệ':''));
 }
 document.getElementById('cd-drop-zone') && document.getElementById('cd-drop-zone').addEventListener('drop',function(e){
   e.preventDefault();const f=e.dataTransfer.files[0];if(f)processCdFile(f);
