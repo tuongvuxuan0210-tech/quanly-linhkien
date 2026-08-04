@@ -289,7 +289,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
 <div class="modal-overlay" id="modal-cd-import">
   <div class="modal-box" style="max-width:640px">
     <h3>Nhập file chuyển công đoạn <button onclick="closeModal(&#39;modal-cd-import&#39;)">✕</button></h3>
-    <div class="info-box">ℹ File Excel/CSV hàng ngày cần có cột: <b>Ma hang, Ten hang, So luong, Cong doan</b> (giá trị Công đoạn: <b>Ep / Phun / In</b>). Các dòng cùng Mã hàng + Công đoạn sẽ được <b>cộng dồn</b> thành 1 lượt ghi nhận.</div>
+    <div class="info-box">ℹ File có cột <b>Cong doan</b> (Ep/Phun/In): dùng đúng công đoạn ghi trong file. File <b>không có</b> cột này (VD: file "Cần Hàng" cân hàng từ trạm cân) sẽ được hiểu là toàn bộ <b>công đoạn Ép</b> — hệ thống tự route sang đúng bước tiếp theo (Phun/In/Kho Tổng) dựa theo cờ đã tick cho từng linh kiện. Các dòng cùng Mã hàng + Công đoạn sẽ được <b>cộng dồn</b>.</div>
     <div class="drop-zone" id="cd-drop-zone" onclick="document.getElementById(&#39;cd-file-in&#39;).click()">
       ⬆ Kéo thả file công đoạn (.xlsx, .csv) vào đây hoặc bấm để chọn file
     </div>
@@ -4081,7 +4081,10 @@ function buildCdFromRows(rows){
   const hdr=rows[0].map(h=>String(h||'').trim().toLowerCase());
   const iMa=hdr.indexOf('ma hang'),iTen=hdr.indexOf('ten hang'),iSl=hdr.indexOf('so luong');
   const iCd=hdr.findIndex(h=>h==='cong doan'||h==='cong  doan'||h==='congdoan');
-  if(iMa<0||iSl<0||iCd<0){toast('File thiếu cột "Ma hang", "So luong" hoặc "Cong doan"!',true);return;}
+  if(iMa<0||iSl<0){toast('File thiếu cột "Ma hang" hoặc "So luong"!',true);return;}
+  // Nếu file không có cột "Cong doan" (VD: file "Cần Hàng" cân hàng từ trạm cân) → mặc định toàn bộ là công đoạn Ép
+  const defaultToEp=(iCd<0);
+  if(defaultToEp)toast('File không có cột "Cong doan" — mặc định toàn bộ được tính là công đoạn ÉP.');
   const map={};
   for(let i=1;i<rows.length;i++){
     const c=rows[i];
@@ -4089,7 +4092,7 @@ function buildCdFromRows(rows){
     if(!ma)continue;
     const ten=iTen>=0?String(c[iTen]||'').trim():'';
     const sl=parseSoLuong(c[iSl]);
-    const cd=mapCongDoan(c[iCd]);
+    const cd=defaultToEp?'ep':mapCongDoan(c[iCd]);
     if(!cd)continue;
     const key=ma+'__'+cd;
     if(!map[key])map[key]={ma,ten,congdoan:cd,sl:0,count:0};
