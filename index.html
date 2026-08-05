@@ -4156,15 +4156,20 @@ function buildCdWideImport(rows){
   cdImportBuf=rows.map(r=>{
     const it=items.find(x=>x.ma===r.ma);
     const found=!!(it&&it.congDoan===true);
-    if(found){migrateCdItem(it);migrateItemTon(it);}
-    const inOld=found?(it.cdInBaseline||0):0;
-    const inDelta=(r.in!==null&&found)?(r.in-inOld):0;
+    let finalStage=null,epOld=null,epNew=null,phunOld=null,phunNew=null,finalVal=null,finalOld=0,finalDelta=0,ktOld=0;
+    if(found){
+      migrateCdItem(it);migrateItemTon(it);
+      finalStage=cdFinalStage(it);
+      ktOld=getTon(it,'kt');
+      if(finalStage!=='ep'){epOld=it.wip.ep;epNew=r.ep;} // Ép chỉ là kho tạm nếu còn qua Phun/In
+      if(finalStage==='in'){phunOld=it.wip.phun;phunNew=r.phun;} // Phun chỉ là kho tạm nếu còn qua In
+      finalVal=finalStage==='ep'?r.ep:finalStage==='phun'?r.phun:r.in; // cột ứng với bước CUỐI của linh kiện này
+      finalOld=it.cdInBaseline||0;
+      finalDelta=(finalVal!==null)?(finalVal-finalOld):0;
+    }
     return {
-      ma:r.ma, ten:it?it.ten:r.ten, dvt:it?it.dvt:'', found,
-      epOld: found?it.wip.ep:0, epNew: r.ep,
-      phunOld: found?it.wip.phun:0, phunNew: r.phun,
-      inVal: r.in, inOld, inDelta,
-      ktOld: found?getTon(it,'kt'):0
+      ma:r.ma, ten:it?it.ten:r.ten, dvt:it?it.dvt:'', found, finalStage,
+      epOld, epNew, phunOld, phunNew, finalVal, finalOld, finalDelta, ktOld
     };
   }).sort((a,b)=>a.ma.localeCompare(b.ma));
   renderCdImportPreview();
@@ -4211,20 +4216,26 @@ function renderCdImportPreview(){
   const foundCount=cdImportBuf.filter(r=>r.found).length;
   const missCount=cdImportBuf.length-foundCount;
   if(cdImportMode==='wide'){
-    prev.innerHTML='<div style="padding:5px 0;font-size:11px;color:#666">📊 Nhận diện <b>bảng tổng theo mã</b> — Ép/Phun sẽ <b style="color:#c0392b">GHI ĐÈ</b> đúng bằng số trong file; cột In sẽ <b style="color:#1e8449">CỘNG THÊM phần chênh lệch</b> vào Kho Tổng (so với lần đồng bộ trước, không trùng lặp). Tìm thấy <b style="color:#1e8449">'+cdImportBuf.length+'</b> mã'
+    prev.innerHTML='<div style="padding:5px 0;font-size:11px;color:#666">📊 Nhận diện <b>bảng tổng theo mã</b> — hệ thống tự xác định bước CUỐI của từng linh kiện (theo cờ Qua Phun/Qua In đã tick): các bước trước đó là kho tạm (<b style="color:#c0392b">GHI ĐÈ</b>), bước cuối cùng <b style="color:#1e8449">CỘNG THÊM phần chênh lệch</b> thẳng vào Kho Tổng. Tìm thấy <b style="color:#1e8449">'+cdImportBuf.length+'</b> mã'
       +(missCount?' — <b style="color:#c0392b">'+missCount+'</b> mã không thuộc quy trình công đoạn (sẽ bỏ qua)':'')+':</div>'
       +'<table style="width:100%;border-collapse:collapse;margin-top:4px"><thead><tr>'
-      +['Mã hàng','Tên hàng','Tồn Ép (cũ → mới)','Tồn Phun (cũ → mới)','In → Kho Tổng'].map(h=>'<th style="background:#c0392b;color:#fff;padding:4px 6px;font-size:10px;text-align:left">'+h+'</th>').join('')
+      +['Mã hàng','Tên hàng','Bước cuối','Ép','Phun','→ Kho Tổng'].map(h=>'<th style="background:#c0392b;color:#fff;padding:4px 6px;font-size:10px;text-align:left">'+h+'</th>').join('')
       +'</tr></thead><tbody>'
-      +cdImportBuf.map(r=>'<tr style="'+(!r.found?'opacity:.5':'')+'">'
+      +cdImportBuf.map(r=>{
+        const epCell=r.epNew===null?'<span style="color:#ccc">—</span>':fN(r.epOld)+' → <b>'+fN(r.epNew)+'</b>';
+        const phunCell=r.phunNew===null?'<span style="color:#ccc">—</span>':fN(r.phunOld)+' → <b>'+fN(r.phunNew)+'</b>';
+        const ktCell=r.finalVal===null?'<span style="color:#ccc">—</span>':(r.finalDelta!==0?fN(r.ktOld)+' → <b style="color:#1e8449">'+fN(r.ktOld+r.finalDelta)+'</b> (+'+fN(r.finalDelta)+')':'<span style="color:#999">không đổi</span>');
+        return '<tr style="'+(!r.found?'opacity:.5':'')+'">'
         +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ma+(!r.found?' <span style="color:#c0392b">(không hợp lệ)</span>':'')+'</td>'
-        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ten.slice(0,24)+'</td>'
-        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+(r.epNew===null?'<span style="color:#ccc">—</span>':fN(r.epOld)+' → <b>'+fN(r.epNew)+'</b>')+'</td>'
-        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+(r.phunNew===null?'<span style="color:#ccc">—</span>':fN(r.phunOld)+' → <b>'+fN(r.phunNew)+'</b>')+'</td>'
-        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+(r.inVal===null?'<span style="color:#ccc">—</span>':(r.inDelta!==0?'Kho Tổng '+fN(r.ktOld)+' → <b style="color:#1e8449">'+fN(r.ktOld+r.inDelta)+'</b> (+'+fN(r.inDelta)+')':'<span style="color:#999">không đổi</span>'))+'</td>'
-        +'</tr>').join('')
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ten.slice(0,22)+'</td>'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+(r.finalStage?CD_LABELS[r.finalStage]:'—')+'</td>'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+epCell+'</td>'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+phunCell+'</td>'
+        +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+ktCell+'</td>'
+        +'</tr>';
+      }).join('')
       +'</tbody></table>'
-      +'<div style="padding:6px 0;font-size:10.5px;color:#999">ℹ Lần đầu đồng bộ, toàn bộ số ở cột In sẽ được cộng vào Kho Tổng. Các lần sau chỉ cộng đúng phần TĂNG THÊM so với lần trước — không lo bị cộng trùng.</div>';
+      +'<div style="padding:6px 0;font-size:10.5px;color:#999">ℹ VD: linh kiện không tick Qua Phun/Qua In → cột "Ép" chính là bước cuối, cộng thẳng vào Kho Tổng (không giữ lại làm kho tạm nữa).</div>';
   }else{
     prev.innerHTML='<div style="padding:5px 0;font-size:11px;color:#666">Tìm thấy <b style="color:#1e8449">'+cdImportBuf.length+'</b> dòng'
       +(missCount?' — <b style="color:#c0392b">'+missCount+'</b> mã không thuộc quy trình công đoạn (sẽ bỏ qua)':'')+':</div>'
@@ -4252,11 +4263,11 @@ function confirmCdImport(){if(!requireAdmin())return;
       const notes=[];
       if(r.epNew!==null&&r.epNew!==r.epOld){it.wip.ep=r.epNew;notes.push('Ép: '+fN(r.epOld)+'→'+fN(r.epNew));}
       if(r.phunNew!==null&&r.phunNew!==r.phunOld){it.wip.phun=r.phunNew;notes.push('Phun: '+fN(r.phunOld)+'→'+fN(r.phunNew));}
-      if(r.inVal!==null&&r.inDelta!==0){
-        it.ton.kt=Math.max(0,(it.ton.kt||0)+r.inDelta);
-        it.cdInBaseline=r.inVal;
-        notes.push('In→Kho Tổng: +'+fN(r.inDelta));
-        gdLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,type:'nhap',sl:Math.abs(r.inDelta),loc:'kt',from:'Đồng bộ công đoạn In (bảng tổng)',nguoi:'',ton_sau:getTon(it,'kt'),note:'Đồng bộ từ file tổng — In tăng thêm '+fN(r.inDelta)});
+      if(r.finalVal!==null&&r.finalDelta!==0){
+        it.ton.kt=Math.max(0,(it.ton.kt||0)+r.finalDelta);
+        it.cdInBaseline=r.finalVal;
+        notes.push(CD_LABELS[r.finalStage]+'→Kho Tổng: +'+fN(r.finalDelta));
+        gdLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,type:'nhap',sl:Math.abs(r.finalDelta),loc:'kt',from:'Đồng bộ công đoạn '+CD_LABELS[r.finalStage]+' (bảng tổng)',nguoi:'',ton_sau:getTon(it,'kt'),note:'Đồng bộ từ file tổng — '+CD_LABELS[r.finalStage]+' tăng thêm '+fN(r.finalDelta)});
       }
       if(!notes.length)return;
       congDoanLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,congdoan:'sync',sl:0,nguoi:'',note:'Đồng bộ từ bảng tổng: '+notes.join(', '),ton_sau:0});
