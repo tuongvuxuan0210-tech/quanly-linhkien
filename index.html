@@ -994,30 +994,30 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     </div>
     <button class="btn" onclick="exportDtCSV()" style="margin-left:auto">⬇ CSV</button>
   </div>
-  <div class="info-box">ℹ Doanh thu = Số lượng sản xuất × <b>Giá bán hiện tại</b> của thành phẩm (đặt/sửa giá tại tab <b>Định Mức BOM</b>). Nếu đổi giá, doanh thu của toàn bộ sản lượng đã ghi nhận trước đó (kể cả tháng trước) cũng sẽ được tính lại theo giá mới nhất — không giữ giá cũ.</div>
+  <div class="info-box">ℹ So sánh song song 2 loại doanh thu: <b>Sản Lượng SX</b> (giá trị hàng đã làm ra — mang tính tiềm năng, ghi nhận ngay khi sản xuất xong) và <b>Xuất Hàng TP</b> (giá trị hàng đã thực giao cho khách — mang tính thực thu). Chênh lệch dương nghĩa là còn hàng tồn kho thành phẩm chưa xuất đi. Giá tính theo <b>Giá bán hiện tại</b> (đặt/sửa tại tab Định Mức BOM) — đổi giá sẽ tính lại cho cả các tháng trước.</div>
   <div class="cards4">
-    <div class="card"><div class="card-label">Tổng doanh thu tháng</div><div class="card-val cg" id="dt-total" style="font-size:18px">0đ</div></div>
-    <div class="card"><div class="card-label">Doanh thu Xưởng 1</div><div class="card-val cb" id="dt-x1" style="font-size:18px">0đ</div></div>
-    <div class="card"><div class="card-label">Doanh thu Xưởng 2</div><div class="card-val ca" id="dt-x2" style="font-size:18px">0đ</div></div>
-    <div class="card"><div class="card-label">Tổng SL sản xuất tháng</div><div class="card-val" id="dt-sl">0</div></div>
+    <div class="card"><div class="card-label">Doanh thu theo Sản Lượng SX</div><div class="card-val cb" id="dt-total" style="font-size:18px">0đ</div></div>
+    <div class="card"><div class="card-label">Doanh thu theo Xuất Hàng TP</div><div class="card-val cg" id="dt-x1" style="font-size:18px">0đ</div></div>
+    <div class="card"><div class="card-label">Chênh lệch (SX − Xuất hàng)</div><div class="card-val ca" id="dt-x2" style="font-size:18px">0đ</div></div>
+    <div class="card"><div class="card-label">SL xuất hàng tháng (SL SX)</div><div class="card-val" id="dt-sl">0</div></div>
   </div>
   <div class="tbl-wrap">
     <div class="chart-title" style="padding:10px 10px 0">Doanh thu theo Công đoạn</div>
     <table><thead><tr>
-      <th style="width:40px">STT</th><th class="tl">Công đoạn</th><th>SL sản xuất</th><th>Doanh thu Xưởng 1</th><th>Doanh thu Xưởng 2</th><th>Tổng doanh thu</th>
+      <th style="width:40px">STT</th><th class="tl">Công đoạn</th><th>SL SX</th><th>DT theo SX</th><th>SL Xuất</th><th>DT theo Xuất hàng</th><th>Chênh lệch</th>
     </tr></thead><tbody id="dt-cd-body"><tr><td colspan="6" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr></tbody></table>
   </div>
   <div class="tbl-wrap" style="margin-top:12px">
     <div class="chart-title" style="padding:10px 10px 0">Doanh thu theo ngày</div>
     <table><thead><tr>
-      <th style="width:40px">STT</th><th class="tl">Ngày</th><th>SL sản xuất</th><th>Doanh thu Xưởng 1</th><th>Doanh thu Xưởng 2</th><th>Tổng doanh thu ngày</th>
-    </tr></thead><tbody id="dt-day-body"><tr><td colspan="6" style="text-align:center;padding:32px;color:#999">Chưa có dữ liệu sản lượng trong tháng này.</td></tr></tbody></table>
+      <th style="width:40px">STT</th><th class="tl">Ngày</th><th>SL SX</th><th>DT theo SX</th><th>SL Xuất</th><th>DT theo Xuất hàng</th><th>Chênh lệch</th>
+    </tr></thead><tbody id="dt-day-body"><tr><td colspan="6" style="text-align:center;padding:32px;color:#999">Chưa có dữ liệu trong tháng này.</td></tr></tbody></table>
   </div>
   <div class="tbl-wrap" style="margin-top:12px">
     <div class="chart-title" style="padding:10px 10px 0">Doanh thu theo thành phẩm (trong tháng)</div>
     <table><thead><tr>
-      <th style="width:40px">STT</th><th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th><th class="tl">Công đoạn</th><th>SL sản xuất</th><th>Doanh thu Xưởng 1</th><th>Doanh thu Xưởng 2</th><th>Tổng doanh thu</th>
-    </tr></thead><tbody id="dt-sp-body"><tr><td colspan="8" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr></tbody></table>
+      <th style="width:40px">STT</th><th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th><th class="tl">Công đoạn</th><th>SL SX</th><th>DT theo SX</th><th>SL Xuất</th><th>DT theo Xuất hàng</th><th>Chênh lệch</th>
+    </tr></thead><tbody id="dt-sp-body"><tr><td colspan="9" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr></tbody></table>
   </div>
 </div>
 
@@ -1207,7 +1207,11 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
         <span style="color:#555">Số ngày có kế hoạch: <span id="kh-matrix-daycount" style="font-weight:700">0</span></span>
       </div>
     </div>
-    <div class="info-box">ℹ Xem tổng quan kế hoạch sản xuất theo <b>từng thành phẩm × từng ngày</b> trong tuần/tháng. Đây là bảng <b>chỉ xem</b> — bấm vào ngày ở tiêu đề cột để chuyển sang chế độ "Ngày" và chỉnh sửa kế hoạch ngày đó.</div>
+    <div class="info-box">ℹ Xem <b>và chỉnh sửa trực tiếp</b> kế hoạch sản xuất theo từng thành phẩm × từng ngày trong tuần/tháng — gõ số lượng vào ô là tự lưu ngay, không cần chuyển từng ngày. Bấm vào ngày ở tiêu đề cột để xem chi tiết linh kiện thiếu của đúng ngày đó (chế độ "Ngày").</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+      <select id="kh-matrix-add-select" style="padding:6px 9px;border:1px solid #ccc;border-radius:6px;font-size:12px;min-width:260px"></select>
+      <button class="btn btn-green" onclick="addKhMatrixProduct()">+ Thêm thành phẩm vào bảng</button>
+    </div>
     <div class="tbl-wrap" style="overflow-x:auto">
       <table id="kh-matrix-table"><thead id="kh-matrix-head"></thead><tbody id="kh-matrix-body"></tbody></table>
     </div>
@@ -2136,7 +2140,8 @@ function niceMaxOf(vals){
 function buildRevenuePctSVG(labels,pctArr){
   const W=Math.max(680,labels.length*46),H=300,padL=50,padR=16,padT=28,padB=56;
   const chartW=W-padL-padR,chartH=H-padT-padB;
-  const maxV=Math.max(120,niceMaxOf(pctArr));
+  const validVals=pctArr.filter(v=>v!==null);
+  const maxV=Math.max(120,niceMaxOf(validVals.length?validVals:[0]));
   const n=labels.length||1;
   const slotW=n>1?chartW/(n-1):chartW;
   const xFor=i=>n>1?padL+slotW*i:padL+chartW/2;
@@ -2147,14 +2152,33 @@ function buildRevenuePctSVG(labels,pctArr){
     grid+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#eee" stroke-width="1"/>'
       +'<text x="'+(padL-8)+'" y="'+(y+3)+'" font-size="9" fill="#999" text-anchor="end">'+Math.round(val)+'</text>';
   }
-  const pts=pctArr.map((v,i)=>[xFor(i),yFor(v)]);
-  const linePts=pts.map(p=>p[0]+','+p[1]).join(' ');
-  const areaPts=(padL)+','+(padT+chartH)+' '+linePts+' '+(xFor(n-1))+','+(padT+chartH);
+  // Vẽ đường/vùng tô theo TỪNG ĐOẠN liên tục có kế hoạch — ngày không có kế hoạch sẽ ngắt đoạn, không nối liền
+  let segs='',seg=[];
+  function flushSeg(){
+    if(seg.length>1){
+      const linePts=seg.map(p=>p[0]+','+p[1]).join(' ');
+      const areaPts=seg[0][0]+','+(padT+chartH)+' '+linePts+' '+seg[seg.length-1][0]+','+(padT+chartH);
+      segs+='<polygon points="'+areaPts+'" fill="#16a08522"/><polyline points="'+linePts+'" fill="none" stroke="#16a085" stroke-width="2.5"/>';
+    }
+    seg=[];
+  }
+  pctArr.forEach((v,i)=>{
+    if(v===null){flushSeg();return;}
+    seg.push([xFor(i),yFor(v)]);
+  });
+  flushSeg();
   let dotsLabels='';
   pctArr.forEach((v,i)=>{
-    const x=xFor(i),y=yFor(v);
-    dotsLabels+='<circle cx="'+x+'" cy="'+y+'" r="3" fill="#16a085" stroke="#fff" stroke-width="1"/>';
-    dotsLabels+='<text x="'+x+'" y="'+(y-8)+'" font-size="8" fill="#0e6655" text-anchor="middle" font-weight="700">'+(Math.round(v*10)/10)+'%</text>';
+    const x=xFor(i);
+    if(v===null){
+      const y=padT+chartH;
+      dotsLabels+='<circle cx="'+x+'" cy="'+y+'" r="3" fill="#fff" stroke="#bbb" stroke-width="1.5"/>';
+      dotsLabels+='<text x="'+x+'" y="'+(y-8)+'" font-size="8" fill="#999" text-anchor="middle">chưa có KH</text>';
+    }else{
+      const y=yFor(v);
+      dotsLabels+='<circle cx="'+x+'" cy="'+y+'" r="3" fill="#16a085" stroke="#fff" stroke-width="1"/>';
+      dotsLabels+='<text x="'+x+'" y="'+(y-8)+'" font-size="8" fill="#0e6655" text-anchor="middle" font-weight="700">'+(Math.round(v*10)/10)+'%</text>';
+    }
   });
   let xLabels='';
   labels.forEach((lb,i)=>{
@@ -2164,8 +2188,7 @@ function buildRevenuePctSVG(labels,pctArr){
   return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+H+'px;display:block" xmlns="http://www.w3.org/2000/svg">'
     +'<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="transparent"/>'
     +grid
-    +'<polygon points="'+areaPts+'" fill="#16a08522"/>'
-    +'<polyline points="'+linePts+'" fill="none" stroke="#16a085" stroke-width="2.5"/>'
+    +segs
     +dotsLabels+xLabels
     +'<line x1="'+padL+'" y1="'+padT+'" x2="'+padL+'" y2="'+(padT+chartH)+'" stroke="#ccc"/>'
     +'<line x1="'+padL+'" y1="'+(padT+chartH)+'" x2="'+(W-padR)+'" y2="'+(padT+chartH)+'" stroke="#ccc"/>'
@@ -2275,8 +2298,8 @@ function renderOverviewCharts(){
   for(let d=new Date(tqRangeFrom+'T00:00:00');fISOLocal(d)<=tqRangeTo;d.setDate(d.getDate()+1)){daysInRange.push(fISOLocal(d));}
   if(!daysInRange.length){revEl.innerHTML=qtyEl.innerHTML='<div style="padding:24px;text-align:center;color:#999">Chưa có dữ liệu.</div>';return;}
   const labels=daysInRange.map(ds=>{const p=ds.split('-');return p[2]+'/'+p[1];});
-  const actualRevenue=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>{
-    const p=products.find(x=>x.ma===l.ma);const gia=p?(p.gia||0):(l.gia||0);return s+l.sl*gia;
+  const actualRevenue=daysInRange.map(ds=>shipLog.filter(l=>l.date===ds).reduce((s,l)=>{
+    const p=products.find(x=>x.ma===l.ma);const gia=p?(p.gia||0):0;return s+l.sl*gia;
   },0));
   const planRevenue=daysInRange.map(ds=>(planData[ds]||[]).reduce((s,r)=>{
     const p=products.find(x=>x.ma===r.ma);return s+(r.sl||0)*(p?(p.gia||0):0);
@@ -2286,7 +2309,7 @@ function renderOverviewCharts(){
   const staffChieu=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>s+(l.nsChieu||0),0));
   const QTY_TARGET=2500;
   const STAFF_TARGET=25;
-  const pctArr=daysInRange.map((ds,i)=>planRevenue[i]>0?Math.round((actualRevenue[i]/planRevenue[i])*1000)/10:0);
+  const pctArr=daysInRange.map((ds,i)=>planRevenue[i]>0?Math.round((actualRevenue[i]/planRevenue[i])*1000)/10:null);
   revEl.innerHTML=buildRevenuePctSVG(labels,pctArr);
   qtyEl.innerHTML=buildQtyTargetSVG(labels,actualQty,QTY_TARGET,staffSang,staffChieu,STAFF_TARGET);
 }
@@ -2766,75 +2789,80 @@ function chMonthDt(d){curMonthDt=new Date(curMonthDt);curMonthDt.setMonth(curMon
 function goCurMonthDt(){curMonthDt=new Date();curMonthDt.setDate(1);document.getElementById('disp-month-dt').textContent=fMonthLabel(curMonthDt);renderDoanhThu();}
 function renderDoanhThu(){
   const mk=monthKey(curMonthDt);
-  const rows=prodLog.filter(l=>l.date&&l.date.slice(0,7)===mk).map(l=>{
-    const p=products.find(x=>x.ma===l.ma);
-    const gia=p?(p.gia||0):(l.gia||0); // Ưu tiên giá bán hiện tại của thành phẩm; nếu TP đã bị xóa thì dùng lại giá đã lưu lúc ghi nhận
-    const congdoan=(p&&p.congdoan)?p.congdoan:'Chưa gán công đoạn';
-    return {...l,gia,congdoan,doanhthu:l.sl*gia};
-  });
-  const dtX1=rows.filter(l=>l.xuong==='x1').reduce((s,l)=>s+(l.doanhthu||0),0);
-  const dtX2=rows.filter(l=>l.xuong==='x2').reduce((s,l)=>s+(l.doanhthu||0),0);
-  document.getElementById('dt-total').textContent=fN(dtX1+dtX2)+'đ';
-  document.getElementById('dt-x1').textContent=fN(dtX1)+'đ';
-  document.getElementById('dt-x2').textContent=fN(dtX2)+'đ';
-  document.getElementById('dt-sl').textContent=fN(rows.reduce((s,l)=>s+l.sl,0));
-  // Theo công đoạn
-  const byCd={};
-  rows.forEach(l=>{
-    if(!byCd[l.congdoan])byCd[l.congdoan]={sl:0,x1:0,x2:0};
-    byCd[l.congdoan].sl+=l.sl;
-    byCd[l.congdoan][l.xuong==='x2'?'x2':'x1']+=(l.doanhthu||0);
-  });
-  const cds=Object.keys(byCd).sort();
-  const cdBody=document.getElementById('dt-cd-body');
-  cdBody.innerHTML=cds.length?cds.map((cd,i)=>{
-    const r=byCd[cd];
-    return '<tr><td class="tc">'+(i+1)+'</td><td><span style="background:#f0e6f7;color:#5c3a7d;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+cd+'</span></td><td class="tc">'+fN(r.sl)+'</td>'
-      +'<td class="tr">'+fN(r.x1)+'đ</td><td class="tr">'+fN(r.x2)+'đ</td>'
-      +'<td class="tr" style="font-weight:700;color:#1e8449">'+fN(r.x1+r.x2)+'đ</td></tr>';
-  }).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr>';
-  // Theo ngày
-  const byDay={};
-  rows.forEach(l=>{
-    if(!byDay[l.date])byDay[l.date]={sl:0,x1:0,x2:0};
-    byDay[l.date].sl+=l.sl;
-    byDay[l.date][l.xuong==='x2'?'x2':'x1']+=(l.doanhthu||0);
-  });
-  const days=Object.keys(byDay).sort();
-  const dayBody=document.getElementById('dt-day-body');
-  dayBody.innerHTML=days.length?days.map((ds,i)=>{
-    const r=byDay[ds];
-    return '<tr><td class="tc">'+(i+1)+'</td><td>'+ds+'</td><td class="tc">'+fN(r.sl)+'</td>'
-      +'<td class="tr">'+fN(r.x1)+'đ</td><td class="tr">'+fN(r.x2)+'đ</td>'
-      +'<td class="tr" style="font-weight:700;color:#1e8449">'+fN(r.x1+r.x2)+'đ</td></tr>';
-  }).join('') : '<tr><td colspan="6" style="text-align:center;padding:32px;color:#999">Chưa có dữ liệu sản lượng trong tháng này.</td></tr>';
-  // Theo thành phẩm
-  const byMa={};
-  rows.forEach(l=>{
-    if(!byMa[l.ma])byMa[l.ma]={ten:l.ten,congdoan:l.congdoan,sl:0,x1:0,x2:0};
-    byMa[l.ma].sl+=l.sl;
-    byMa[l.ma][l.xuong==='x2'?'x2':'x1']+=(l.doanhthu||0);
-  });
-  const mas=Object.keys(byMa).sort();
-  const spBody=document.getElementById('dt-sp-body');
-  spBody.innerHTML=mas.length?mas.map((ma,i)=>{
-    const r=byMa[ma];
-    return '<tr><td class="tc">'+(i+1)+'</td><td><div class="ma-code">'+ma+'</div></td><td class="item-ten">'+r.ten+'</td>'
-      +'<td><span style="background:#f0e6f7;color:#5c3a7d;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+r.congdoan+'</span></td>'
-      +'<td class="tc">'+fN(r.sl)+'</td><td class="tr">'+fN(r.x1)+'đ</td><td class="tr">'+fN(r.x2)+'đ</td>'
-      +'<td class="tr" style="font-weight:700;color:#1e8449">'+fN(r.x1+r.x2)+'đ</td></tr>';
-  }).join('') : '<tr><td colspan="8" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr>';
-}
-function exportDtCSV(){
-  const mk=monthKey(curMonthDt);
-  const rows=prodLog.filter(l=>l.date&&l.date.slice(0,7)===mk).map(l=>{
+  const rowsSX=prodLog.filter(l=>l.date&&l.date.slice(0,7)===mk).map(l=>{
     const p=products.find(x=>x.ma===l.ma);
     const gia=p?(p.gia||0):(l.gia||0);
     const congdoan=(p&&p.congdoan)?p.congdoan:'Chưa gán công đoạn';
     return {...l,gia,congdoan,doanhthu:l.sl*gia};
   });
-  const r=[['Ngày','Mã TP','Tên thành phẩm','Công đoạn','Xưởng','SL sản xuất','Giá bán','Doanh thu']];
-  rows.sort((a,b)=>a.date!==b.date?a.date.localeCompare(b.date):a.time.localeCompare(b.time)).forEach(l=>r.push([l.date,l.ma,l.ten,l.congdoan,LOC_LABELS[l.xuong]||'Xưởng 1',l.sl,l.gia||0,l.doanhthu||0]));
+  const rowsXH=shipLog.filter(l=>l.date&&l.date.slice(0,7)===mk).map(l=>{
+    const p=products.find(x=>x.ma===l.ma);
+    const gia=p?(p.gia||0):0;
+    const congdoan=(p&&p.congdoan)?p.congdoan:'Chưa gán công đoạn';
+    return {...l,gia,congdoan,doanhthu:l.sl*gia};
+  });
+  const slSX=rowsSX.reduce((s,l)=>s+l.sl,0), dtSX=rowsSX.reduce((s,l)=>s+(l.doanhthu||0),0);
+  const slXH=rowsXH.reduce((s,l)=>s+l.sl,0), dtXH=rowsXH.reduce((s,l)=>s+(l.doanhthu||0),0);
+  document.getElementById('dt-total').textContent=fN(dtSX)+'đ';
+  document.getElementById('dt-x1').textContent=fN(dtXH)+'đ';
+  document.getElementById('dt-x2').textContent=fN(dtSX-dtXH)+'đ';
+  document.getElementById('dt-sl').textContent=fN(slXH)+' (SX: '+fN(slSX)+')';
+  // Gom nhóm theo 1 key bất kỳ (công đoạn / ngày / mã) cho cả 2 nguồn, rồi merge lại để so sánh
+  function groupBy(rows,keyFn,extra){
+    const m={};
+    rows.forEach(l=>{
+      const k=keyFn(l);
+      if(!m[k])m[k]={sl:0,dt:0,...(extra?extra(l):{})};
+      m[k].sl+=l.sl;m[k].dt+=(l.doanhthu||0);
+    });
+    return m;
+  }
+  function mergeRows(mSX,mXH){
+    const keys=new Set([...Object.keys(mSX),...Object.keys(mXH)]);
+    return [...keys].sort().map(k=>{
+      const sx=mSX[k]||{sl:0,dt:0}, xh=mXH[k]||{sl:0,dt:0};
+      return {key:k,slSX:sx.sl,dtSX:sx.dt,slXH:xh.sl,dtXH:xh.dt,extra:sx.extra||xh.extra||{}};
+    });
+  }
+  function rowHtml(cells,leftHtml){
+    return '<tr>'+leftHtml
+      +'<td class="tr">'+fN(cells.slSX)+'</td><td class="tr">'+fN(cells.dtSX)+'đ</td>'
+      +'<td class="tr">'+fN(cells.slXH)+'</td><td class="tr">'+fN(cells.dtXH)+'đ</td>'
+      +'<td class="tr" style="font-weight:700;color:'+(cells.dtSX-cells.dtXH>=0?'#1e8449':'#c0392b')+'">'+fN(cells.dtSX-cells.dtXH)+'đ</td></tr>';
+  }
+  // Theo công đoạn
+  const cdMerged=mergeRows(groupBy(rowsSX,l=>l.congdoan),groupBy(rowsXH,l=>l.congdoan));
+  document.getElementById('dt-cd-body').innerHTML=cdMerged.length?cdMerged.map((r,i)=>rowHtml(r,'<td class="tc">'+(i+1)+'</td><td><span style="background:#f0e6f7;color:#5c3a7d;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+r.key+'</span></td>')).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr>';
+  // Theo ngày
+  const dayMerged=mergeRows(groupBy(rowsSX,l=>l.date),groupBy(rowsXH,l=>l.date));
+  document.getElementById('dt-day-body').innerHTML=dayMerged.length?dayMerged.map((r,i)=>rowHtml(r,'<td class="tc">'+(i+1)+'</td><td>'+r.key+'</td>')).join('') : '<tr><td colspan="6" style="text-align:center;padding:32px;color:#999">Chưa có dữ liệu trong tháng này.</td></tr>';
+  // Theo thành phẩm
+  const maInfo={};
+  rowsSX.forEach(l=>{if(!maInfo[l.ma])maInfo[l.ma]={ten:l.ten,congdoan:l.congdoan};});
+  rowsXH.forEach(l=>{if(!maInfo[l.ma])maInfo[l.ma]={ten:l.ten,congdoan:l.congdoan};});
+  const maMerged=mergeRows(groupBy(rowsSX,l=>l.ma),groupBy(rowsXH,l=>l.ma));
+  document.getElementById('dt-sp-body').innerHTML=maMerged.length?maMerged.map((r,i)=>{
+    const info=maInfo[r.key]||{ten:r.key,congdoan:''};
+    return rowHtml(r,'<td class="tc">'+(i+1)+'</td><td><div class="ma-code">'+r.key+'</div></td><td class="item-ten">'+info.ten+'</td><td><span style="background:#f0e6f7;color:#5c3a7d;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+info.congdoan+'</span></td>');
+  }).join('') : '<tr><td colspan="9" style="text-align:center;padding:24px;color:#999">Chưa có dữ liệu.</td></tr>';
+}
+function exportDtCSV(){
+  const mk=monthKey(curMonthDt);
+  const rowsSX=prodLog.filter(l=>l.date&&l.date.slice(0,7)===mk).map(l=>{
+    const p=products.find(x=>x.ma===l.ma);
+    const gia=p?(p.gia||0):(l.gia||0);
+    return {...l,doanhthu:l.sl*gia};
+  });
+  const rowsXH=shipLog.filter(l=>l.date&&l.date.slice(0,7)===mk).map(l=>{
+    const p=products.find(x=>x.ma===l.ma);
+    const gia=p?(p.gia||0):0;
+    return {...l,doanhthu:l.sl*gia};
+  });
+  const byDay={};
+  rowsSX.forEach(l=>{if(!byDay[l.date])byDay[l.date]={slSX:0,dtSX:0,slXH:0,dtXH:0};byDay[l.date].slSX+=l.sl;byDay[l.date].dtSX+=(l.doanhthu||0);});
+  rowsXH.forEach(l=>{if(!byDay[l.date])byDay[l.date]={slSX:0,dtSX:0,slXH:0,dtXH:0};byDay[l.date].slXH+=l.sl;byDay[l.date].dtXH+=(l.doanhthu||0);});
+  const r=[['Ngày','SL Sản Lượng SX','Doanh thu theo SX','SL Xuất Hàng TP','Doanh thu theo Xuất hàng','Chênh lệch (SX-Xuất hàng)']];
+  Object.keys(byDay).sort().forEach(ds=>{const d=byDay[ds];r.push([ds,d.slSX,d.dtSX,d.slXH,d.dtXH,d.dtSX-d.dtXH]);});
   dlCSV(r,'doanhthu-'+mk+'.csv');
   toast('Đã xuất CSV doanh thu tháng '+mk);
 }
@@ -3470,6 +3498,8 @@ function goTodayKhMatrix(){
   document.getElementById('kh-date').value=curPlanDate;
   renderKhMatrix();
 }
+let khMatrixDays=[]; // lưu lại khoảng ngày đang hiển thị để các hàm update dùng chung
+let khMatrixExtraMas=new Set(); // mã vừa được thêm tay vào bảng, chưa có SL nào >0
 function renderKhMatrix(){
   const anchor=new Date(curPlanDate+'T00:00:00');
   let days=[];
@@ -3482,44 +3512,108 @@ function renderKhMatrix(){
     for(let d=new Date(first);d<=last;d.setDate(d.getDate()+1)){days.push(fISOLocal(d));}
     document.getElementById('kh-matrix-label').textContent='Tháng '+(anchor.getMonth()+1)+'/'+anchor.getFullYear();
   }
-  // Gom các mã thành phẩm có kế hoạch (sl>0) trong khoảng ngày này
+  khMatrixDays=days;
+  // Gom các mã thành phẩm có kế hoạch (sl>0) trong khoảng ngày này + mã vừa thêm tay
   const maSet={};
   days.forEach(ds=>{(planData[ds]||[]).forEach(r=>{if(r.ma&&r.sl>0)maSet[r.ma]=true;});});
+  khMatrixExtraMas.forEach(ma=>maSet[ma]=true);
   const mas=Object.keys(maSet).sort();
+  // Dropdown thêm thành phẩm: chỉ liệt kê SP chưa có trong bảng
+  const addSel=document.getElementById('kh-matrix-add-select');
+  if(addSel){
+    const already={};mas.forEach(ma=>already[ma]=true);
+    const opts=products.filter(p=>!already[p.ma]).map(p=>'<option value="'+p.ma+'">['+p.ma+'] '+p.ten+'</option>');
+    addSel.innerHTML=opts.length?opts.join(''):'<option value="">-- Đã thêm hết thành phẩm --</option>';
+  }
   // Header
-  let head='<tr><th class="tl" style="min-width:180px">Thành phẩm</th>';
+  let head='<tr><th class="tl" style="min-width:180px">Thành phẩm</th><th style="min-width:95px">Xưởng SX</th>';
   days.forEach(ds=>{
     const d=new Date(ds+'T00:00:00');
     const lb=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
-    head+='<th style="cursor:pointer;white-space:nowrap" onclick="jumpToKhDate(\''+ds+'\')" title="Bấm để xem/sửa ngày này">'+lb+'</th>';
+    head+='<th style="cursor:pointer;white-space:nowrap;min-width:66px" onclick="jumpToKhDate(\''+ds+'\')" title="Bấm để xem chi tiết linh kiện thiếu ngày này">'+lb+'</th>';
   });
-  head+='<th style="background:#8a2418">Tổng</th></tr>';
+  head+='<th style="background:#8a2418">Tổng</th><th style="width:30px"></th></tr>';
   document.getElementById('kh-matrix-head').innerHTML=head;
   // Body
   let body='',colTotals=days.map(()=>0),grandTotal=0;
   if(!mas.length){
-    body='<tr><td colspan="'+(days.length+2)+'" style="text-align:center;padding:24px;color:#999">Chưa có kế hoạch nào trong khoảng thời gian này.</td></tr>';
+    body='<tr><td colspan="'+(days.length+4)+'" style="text-align:center;padding:24px;color:#999">Chưa có thành phẩm nào — bấm "+ Thêm thành phẩm vào bảng" để bắt đầu.</td></tr>';
   }else{
     mas.forEach(ma=>{
       const p=products.find(x=>x.ma===ma);
-      let rowTotal=0;
-      body+='<tr><td class="item-ten">'+(p?p.ten:ma)+'<div class="ma-code">'+ma+'</div></td>';
-      days.forEach((ds,ci)=>{
+      let rowTotal=0,rowLoc='x1';
+      for(const ds of days){const r=(planData[ds]||[]).find(x=>x.ma===ma);if(r&&r.loc){rowLoc=r.loc;break;}}
+      body+='<tr><td class="item-ten">'+(p?p.ten:ma)+'<div class="ma-code">'+ma+'</div></td>'
+        +'<td><select onchange="updKhMatrixLoc(\''+ma+'\',this.value)" style="font-size:11px;padding:2px 4px">'
+        +'<option value="x1"'+(rowLoc==='x1'?' selected':'')+'>Xưởng 1</option>'
+        +'<option value="x2"'+(rowLoc==='x2'?' selected':'')+'>Xưởng 2</option>'
+        +'</select></td>';
+      days.forEach(ds=>{
         const rows=planData[ds]||[];
-        const sl=rows.filter(r=>r.ma===ma).reduce((s,r)=>s+(r.sl||0),0);
-        rowTotal+=sl;colTotals[ci]+=sl;
-        body+='<td class="tr">'+(sl>0?fN(sl):'<span style="color:#ddd">—</span>')+'</td>';
+        const row=rows.find(r=>r.ma===ma);
+        const sl=row?(row.sl||0):0;
+        rowTotal+=sl;
+        const ci=days.indexOf(ds);colTotals[ci]+=sl;
+        body+='<td><input type="number" min="0" value="'+(sl>0?sl:'')+'" placeholder="0" style="width:60px;padding:3px 4px;font-size:11px;border:1px solid #ddd;border-radius:4px;text-align:right" onchange="updKhMatrixCell(\''+ma+'\',\''+ds+'\',this.value)"></td>';
       });
       grandTotal+=rowTotal;
-      body+='<td class="tr" style="font-weight:700;color:#185FA5">'+fN(rowTotal)+'</td></tr>';
+      body+='<td class="tr" style="font-weight:700;color:#185FA5">'+fN(rowTotal)+'</td>'
+        +'<td class="tc"><button onclick="delKhMatrixProduct(\''+ma+'\')" title="Bỏ khỏi bảng (xóa hết SL đã nhập)" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:13px">🗑</button></td></tr>';
     });
-    body+='<tr style="background:#f4f6f8"><td style="font-weight:700">Tổng theo ngày</td>';
+    body+='<tr style="background:#f4f6f8"><td colspan="2" style="font-weight:700">Tổng theo ngày</td>';
     colTotals.forEach(v=>{body+='<td class="tr" style="font-weight:700">'+(v>0?fN(v):'<span style="color:#ddd">—</span>')+'</td>';});
-    body+='<td class="tr" style="font-weight:700;color:#c0392b">'+fN(grandTotal)+'</td></tr>';
+    body+='<td class="tr" style="font-weight:700;color:#c0392b">'+fN(grandTotal)+'</td><td></td></tr>';
   }
   document.getElementById('kh-matrix-body').innerHTML=body;
   document.getElementById('kh-matrix-total').textContent=fN(grandTotal);
   document.getElementById('kh-matrix-daycount').textContent=days.filter((ds,ci)=>colTotals[ci]>0).length+' / '+days.length;
+}
+function addKhMatrixProduct(){
+  const sel=document.getElementById('kh-matrix-add-select');
+  const ma=sel.value;
+  if(!ma){toast('Không còn thành phẩm nào để thêm!',true);return;}
+  khMatrixExtraMas.add(ma);
+  renderKhMatrix();
+}
+function delKhMatrixProduct(ma){
+  if(!requireAdmin())return;
+  if(!confirm('Bỏ thành phẩm này khỏi bảng? Toàn bộ số lượng đã nhập cho mã này trong khoảng ngày đang xem sẽ bị xóa (0).'))return;
+  khMatrixDays.forEach(ds=>{
+    if(planData[ds])planData[ds]=planData[ds].filter(r=>r.ma!==ma);
+  });
+  khMatrixExtraMas.delete(ma);
+  persist();
+  renderKhMatrix();
+  if(khMatrixDays.includes(curPlanDate)){renderKhRows();renderKhShortage();}
+}
+function updKhMatrixCell(ma,ds,val){
+  if(!requireAdmin())return;
+  const sl=parseFloat(val)||0;
+  const rows=planData[ds]||[];
+  let row=rows.find(r=>r.ma===ma);
+  if(!row){
+    if(sl<=0){planData[ds]=rows;persist();return;}
+    let loc='x1';
+    for(const d2 of khMatrixDays){const r2=(planData[d2]||[]).find(x=>x.ma===ma);if(r2&&r2.loc){loc=r2.loc;break;}}
+    row={ma,sl,loc};
+    rows.push(row);
+    planData[ds]=rows;
+  }else{
+    row.sl=sl;
+  }
+  khMatrixExtraMas.delete(ma); // đã có SL thật, không cần giữ trong danh sách "mới thêm tay" nữa
+  persist();
+  renderKhMatrix();
+  if(ds===curPlanDate){renderKhRows();renderKhShortage();}
+}
+function updKhMatrixLoc(ma,loc){
+  if(!requireAdmin())return;
+  khMatrixDays.forEach(ds=>{
+    (planData[ds]||[]).forEach(r=>{if(r.ma===ma)r.loc=loc;});
+  });
+  persist();
+  renderKhMatrix();
+  renderKhRows();renderKhShortage();
 }
 
 function savePlan(){if(!requireAdmin())return;
