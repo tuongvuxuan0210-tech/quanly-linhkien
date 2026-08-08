@@ -630,6 +630,10 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <div class="card"><div class="card-label">Xuất hôm nay</div><div class="card-val ca" id="s-xuat">0</div></div>
     <div class="card"><div class="card-label">Giao dịch hôm nay</div><div class="card-val cb" id="s-gd">0</div></div>
   </div>
+  <div class="cards4" style="grid-template-columns:repeat(2,1fr)">
+    <div class="card"><div class="card-label">📡 Trạm cân — lượt nhận hôm nay</div><div class="card-val cb" id="s-tramcan-luot">0</div></div>
+    <div class="card"><div class="card-label">📡 Trạm cân — tổng SL hôm nay</div><div class="card-val cb" id="s-tramcan-sl">0</div></div>
+  </div>
   <div class="cards4" style="grid-template-columns:repeat(3,1fr)">
     <div class="card"><div class="card-label">Tồn thành phẩm (tại line)</div><div class="card-val cb" id="s-tp-ton">1.715</div></div>
     <div class="card"><div class="card-label">Sản lượng SX hôm nay</div><div class="card-val cg" id="s-tp-sx">0</div></div>
@@ -2355,6 +2359,10 @@ function updateSummary(){
   document.getElementById('s-nhap').textContent=fN(tl.filter(l=>l.type==='nhap').reduce((s,l)=>s+l.sl,0));
   document.getElementById('s-xuat').textContent=fN(tl.filter(l=>l.type==='xuat').reduce((s,l)=>s+l.sl,0));
   document.getElementById('s-gd').textContent=tl.length;
+  const tramCanTL=tl.filter(l=>(l.from||'').indexOf('Trạm cân')===0);
+  const elLuot=document.getElementById('s-tramcan-luot'), elSl=document.getElementById('s-tramcan-sl');
+  if(elLuot)elLuot.textContent=fN(tramCanTL.length);
+  if(elSl)elSl.textContent=fN(tramCanTL.reduce((s,l)=>s+l.sl,0));
   document.getElementById('s-tp-ton').textContent=fN(products.reduce((s,p)=>s+getTonSP(p),0));
   document.getElementById('s-tp-sx').textContent=fN(prodLog.filter(l=>l.date===td).reduce((s,l)=>s+l.sl,0));
   document.getElementById('s-tp-xh').textContent=fN(shipLog.filter(l=>l.date===td).reduce((s,l)=>s+l.sl,0));
