@@ -634,6 +634,10 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <div class="card"><div class="card-label">📡 Trạm cân — lượt nhận hôm nay</div><div class="card-val cb" id="s-tramcan-luot">0</div></div>
     <div class="card"><div class="card-label">📡 Trạm cân — tổng SL hôm nay</div><div class="card-val cb" id="s-tramcan-sl">0</div></div>
   </div>
+  <div class="chart-wrap" style="margin-bottom:14px">
+    <div class="chart-title">📡 Chi tiết nhận từ trạm cân hôm nay (theo mã hàng)</div>
+    <div id="tramcan-detail-list" style="max-height:260px;overflow-y:auto"></div>
+  </div>
   <div class="cards4" style="grid-template-columns:repeat(3,1fr)">
     <div class="card"><div class="card-label">Tồn thành phẩm (tại line)</div><div class="card-val cb" id="s-tp-ton">1.715</div></div>
     <div class="card"><div class="card-label">Sản lượng SX hôm nay</div><div class="card-val cg" id="s-tp-sx">0</div></div>
@@ -737,7 +741,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <table><thead><tr>
       <th class="tl">Mã hàng</th><th class="tl" style="min-width:150px">Tên linh kiện</th>
       <th>Loại</th><th>ĐVT</th>
-      <th>Tồn Kho Tổng</th><th>Tồn Xưởng 1</th><th>Tồn Xưởng 2</th><th>Tổng cộng</th><th>Nhập hôm nay</th><th>Xuất hôm nay</th>
+      <th>Tồn Kho Tổng</th><th>Tồn Xưởng 1</th><th>Tồn Xưởng 2</th><th>Tổng cộng</th><th>Nhập hôm nay</th><th>Xuất hôm nay</th><th>Tổng đã nhập</th><th>Tổng đã xuất</th>
       <th>Mức tối thiểu</th><th>Trạng thái</th>
     </tr></thead>
     <tbody id="tk-body"></tbody></table>
@@ -2091,6 +2095,15 @@ function renderTonKho(){
   const fl=document.getElementById('tk-loai').value,fs=document.getElementById('tk-st').value;
   const ds=fISO(curDate);
   const todayLogs=gdLog.filter(l=>l.date===ds);
+  // Gộp sẵn tổng nhập/xuất TỪ TRƯỚC ĐẾN NAY (toàn bộ lịch sử) theo từng mã hàng,
+  // tính 1 lần cho cả bảng thay vì lọc lại gdLog cho mỗi dòng (đỡ chậm khi
+  // lịch sử đã có hàng trăm/nghìn giao dịch).
+  const tongTheoMa={};
+  gdLog.forEach(l=>{
+    if(!tongTheoMa[l.ma])tongTheoMa[l.ma]={nhap:0,xuat:0};
+    if(l.type==='nhap')tongTheoMa[l.ma].nhap+=l.sl;
+    else tongTheoMa[l.ma].xuat+=l.sl;
+  });
   const rows=items.filter(it=>(!q||(it.ma+it.ten).toLowerCase().includes(q))&&(!fl||it.loai===fl)&&(!fs||getSt(it)===fs));
   const stM={low:'<span class="sb sb-red">Thiếu</span>',warn:'<span class="sb sb-amber">Sắp hết</span>',ok:'<span class="sb sb-green">Đủ hàng</span>'};
   let sumNhap=0,sumXuat=0;
@@ -2099,6 +2112,7 @@ function renderTonKho(){
     const nh=todayLogs.filter(l=>l.ma===it.ma&&l.type==='nhap').reduce((s,l)=>s+l.sl,0);
     const xu=todayLogs.filter(l=>l.ma===it.ma&&l.type==='xuat').reduce((s,l)=>s+l.sl,0);
     sumNhap+=nh;sumXuat+=xu;
+    const tong=tongTheoMa[it.ma]||{nhap:0,xuat:0};
     return '<tr>'
       +'<td><div class="ma-code">'+it.ma+'</div></td>'
       +'<td class="item-ten">'+it.ten+'</td>'
@@ -2110,6 +2124,8 @@ function renderTonKho(){
       +'<td class="tr '+(st==='low'?'cr':st==='warn'?'ca':'cg')+'" style="font-weight:700;font-size:14px">'+fN(getTon(it))+'</td>'
       +'<td class="tr" style="color:'+(nh>0?'#1e8449':'#ccc')+'">'+(nh>0?'+'+fN(nh):'—')+'</td>'
       +'<td class="tr" style="color:'+(xu>0?'#b7770d':'#ccc')+'">'+(xu>0?'−'+fN(xu):'—')+'</td>'
+      +'<td class="tr" style="color:#1e8449">'+fN(tong.nhap)+'</td>'
+      +'<td class="tr" style="color:#b7770d">'+fN(tong.xuat)+'</td>'
       +'<td class="tr">'+fN(it.min)+'</td>'
       +'<td class="tc">'+stM[st]+'</td>'
       +'</tr>';
@@ -2363,6 +2379,26 @@ function updateSummary(){
   const elLuot=document.getElementById('s-tramcan-luot'), elSl=document.getElementById('s-tramcan-sl');
   if(elLuot)elLuot.textContent=fN(tramCanTL.length);
   if(elSl)elSl.textContent=fN(tramCanTL.reduce((s,l)=>s+l.sl,0));
+  const tramCanEl=document.getElementById('tramcan-detail-list');
+  if(tramCanEl){
+    const nhomTheoMa={};
+    tramCanTL.forEach(l=>{
+      const k=l.ma+'|'+(l.loc||'');
+      if(!nhomTheoMa[k])nhomTheoMa[k]={ma:l.ma,ten:l.ten,loc:l.loc,dvt:l.dvt,sl:0,luot:0,gioGanNhat:l.time};
+      nhomTheoMa[k].sl+=l.sl;
+      nhomTheoMa[k].luot+=1;
+      if(l.time>nhomTheoMa[k].gioGanNhat)nhomTheoMa[k].gioGanNhat=l.time;
+    });
+    const dsTramCan=Object.values(nhomTheoMa).sort((a,b)=>b.sl-a.sl);
+    if(!dsTramCan.length){
+      tramCanEl.innerHTML='<div style="padding:20px;text-align:center;color:#888">Chưa có dữ liệu nào từ trạm cân hôm nay.</div>';
+    }else{
+      tramCanEl.innerHTML=dsTramCan.map(r=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0">'
+        +'<div><div style="font-size:10px;color:#999">'+r.ma+' · '+(LOC_LABELS[r.loc]||r.loc)+' · lúc '+r.gioGanNhat+'</div><div style="font-size:12px;font-weight:600">'+(r.ten||'').slice(0,44)+'</div></div>'
+        +'<span class="sb sb-blue">+'+fN(r.sl)+' '+(r.dvt||'')+' ('+r.luot+' lượt)</span>'
+        +'</div>').join('');
+    }
+  }
   document.getElementById('s-tp-ton').textContent=fN(products.reduce((s,p)=>s+getTonSP(p),0));
   document.getElementById('s-tp-sx').textContent=fN(prodLog.filter(l=>l.date===td).reduce((s,l)=>s+l.sl,0));
   document.getElementById('s-tp-xh').textContent=fN(shipLog.filter(l=>l.date===td).reduce((s,l)=>s+l.sl,0));
@@ -3842,8 +3878,17 @@ function dlCSV(rows,fn){
 
 function exportDayCSV(){const ds=fISO(curDate),r=[['Giờ','Mã hàng','Tên linh kiện','ĐVT','Loại GD','Số lượng','Nhập từ/Xuất đến','Người TH','Tồn sau GD','Ghi chú']];gdLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>r.push([l.time,l.ma,l.ten,l.dvt,l.type==='nhap'?'Nhập kho':'Xuất kho',(l.type==='nhap'?'+':'-')+l.sl,l.from||'',l.nguoi||'',l.ton_sau,l.note||'']));dlCSV(r,'giaodich-'+ds+'.csv');toast('Đã xuất CSV');}
 function exportDayPDF(){const ds=fISO(curDate);const rows=gdLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).map((l,i)=>'<tr><td>'+(i+1)+'</td><td>'+l.time+'</td><td style="font-size:9px">'+l.ma+'</td><td>'+l.ten+'</td><td>'+l.dvt+'</td><td class="'+(l.type)+'">'+(l.type==='nhap'?'▲ Nhập':'▼ Xuất')+'</td><td class="'+l.type+'">'+(l.type==='nhap'?'+':'-')+fN(l.sl)+'</td><td>'+(l.from||'—')+'</td><td>'+(l.nguoi||'—')+'</td><td>'+fN(l.ton_sau)+'</td><td>'+(l.note||'')+'</td></tr>').join('');openPDF(buildPDF('NHẬT KÝ GIAO DỊCH — XƯỞNG HẢI TÂN 2','Ngày: '+ds,'<table><thead><tr><th>STT</th><th>Giờ</th><th>Mã hàng</th><th>Tên</th><th>ĐVT</th><th>Loại GD</th><th>SL</th><th>Nhập từ/Xuất đến</th><th>Người TH</th><th>Tồn sau</th><th>Ghi chú</th></tr></thead><tbody>'+rows+'</tbody></table>'));}
-function exportTKCSV(){const r=[['Mã hàng','Tên','Loại','ĐVT','Tồn Kho Tổng','Tồn Xưởng 1','Tồn Xưởng 2','Tổng cộng','Tối thiểu','Trạng thái']];items.forEach(it=>{const st=getSt(it);r.push([it.ma,it.ten,it.loai,it.dvt,getTon(it,'kt'),getTon(it,'x1'),getTon(it,'x2'),getTon(it),it.min,st==='low'?'Thiếu':st==='warn'?'Sắp hết':'Đủ']);});dlCSV(r,'tonkho-'+fISO(new Date())+'.csv');toast('Đã xuất CSV');}
-function exportTKPDF(){const r=items.map((it,i)=>{const st=getSt(it);return '<tr><td>'+(i+1)+'</td><td style="font-size:9px">'+it.ma+'</td><td>'+it.ten+'</td><td>'+it.loai+'</td><td>'+it.dvt+'</td><td>'+fN(getTon(it,'kt'))+'</td><td>'+fN(getTon(it,'x1'))+'</td><td>'+fN(getTon(it,'x2'))+'</td><td class="'+st+'">'+fN(getTon(it))+'</td><td>'+fN(it.min)+'</td><td class="'+st+'">'+(st==='low'?'Thiếu':st==='warn'?'Sắp hết':'Đủ')+'</td></tr>';}).join('');openPDF(buildPDF('TỒN KHO HIỆN TẠI — XƯỞNG HẢI TÂN 2','Ngày: '+fISO(new Date())+' | '+items.length+' mặt hàng','<table><thead><tr><th>STT</th><th>Mã hàng</th><th>Tên linh kiện</th><th>Loại</th><th>ĐVT</th><th>Kho Tổng</th><th>Xưởng 1</th><th>Xưởng 2</th><th>Tổng cộng</th><th>Tối thiểu</th><th>Trạng thái</th></tr></thead><tbody>'+r+'</tbody></table>'));}
+function exportTKCSV(){
+  const tongTheoMa={};gdLog.forEach(l=>{if(!tongTheoMa[l.ma])tongTheoMa[l.ma]={nhap:0,xuat:0};if(l.type==='nhap')tongTheoMa[l.ma].nhap+=l.sl;else tongTheoMa[l.ma].xuat+=l.sl;});
+  const r=[['Mã hàng','Tên','Loại','ĐVT','Tồn Kho Tổng','Tồn Xưởng 1','Tồn Xưởng 2','Tổng cộng','Tổng đã nhập','Tổng đã xuất','Tối thiểu','Trạng thái']];
+  items.forEach(it=>{const st=getSt(it);const tong=tongTheoMa[it.ma]||{nhap:0,xuat:0};r.push([it.ma,it.ten,it.loai,it.dvt,getTon(it,'kt'),getTon(it,'x1'),getTon(it,'x2'),getTon(it),tong.nhap,tong.xuat,it.min,st==='low'?'Thiếu':st==='warn'?'Sắp hết':'Đủ']);});
+  dlCSV(r,'tonkho-'+fISO(new Date())+'.csv');toast('Đã xuất CSV');
+}
+function exportTKPDF(){
+  const tongTheoMa={};gdLog.forEach(l=>{if(!tongTheoMa[l.ma])tongTheoMa[l.ma]={nhap:0,xuat:0};if(l.type==='nhap')tongTheoMa[l.ma].nhap+=l.sl;else tongTheoMa[l.ma].xuat+=l.sl;});
+  const r=items.map((it,i)=>{const st=getSt(it);const tong=tongTheoMa[it.ma]||{nhap:0,xuat:0};return '<tr><td>'+(i+1)+'</td><td style="font-size:9px">'+it.ma+'</td><td>'+it.ten+'</td><td>'+it.loai+'</td><td>'+it.dvt+'</td><td>'+fN(getTon(it,'kt'))+'</td><td>'+fN(getTon(it,'x1'))+'</td><td>'+fN(getTon(it,'x2'))+'</td><td class="'+st+'">'+fN(getTon(it))+'</td><td>'+fN(tong.nhap)+'</td><td>'+fN(tong.xuat)+'</td><td>'+fN(it.min)+'</td><td class="'+st+'">'+(st==='low'?'Thiếu':st==='warn'?'Sắp hết':'Đủ')+'</td></tr>';}).join('');
+  openPDF(buildPDF('TỒN KHO HIỆN TẠI — XƯỞNG HẢI TÂN 2','Ngày: '+fISO(new Date())+' | '+items.length+' mặt hàng','<table><thead><tr><th>STT</th><th>Mã hàng</th><th>Tên linh kiện</th><th>Loại</th><th>ĐVT</th><th>Kho Tổng</th><th>Xưởng 1</th><th>Xưởng 2</th><th>Tổng cộng</th><th>Tổng đã nhập</th><th>Tổng đã xuất</th><th>Tối thiểu</th><th>Trạng thái</th></tr></thead><tbody>'+r+'</tbody></table>'));
+}
 function exportLogCSV(){const r=[['Ngày','Giờ','Mã hàng','Tên','ĐVT','Loại GD','Số lượng','Nhập từ/Xuất đến','Người TH','Tồn sau GD','Ghi chú']];gdLog.sort((a,b)=>b.date!==a.date?b.date.localeCompare(a.date):b.time.localeCompare(a.time)).forEach(l=>r.push([l.date,l.time,l.ma,l.ten,l.dvt,l.type==='nhap'?'Nhập kho':'Xuất kho',(l.type==='nhap'?'+':'-')+l.sl,l.from||'',l.nguoi||'',l.ton_sau,l.note||'']));dlCSV(r,'lichsu-giaodich.csv');toast('Đã xuất CSV');}
 function exportLogPDF(){const r=gdLog.sort((a,b)=>b.date!==a.date?b.date.localeCompare(a.date):b.time.localeCompare(a.time)).map((l,i)=>'<tr><td>'+(i+1)+'</td><td>'+l.date+'</td><td>'+l.time+'</td><td style="font-size:9px">'+l.ma+'</td><td>'+l.ten+'</td><td class="'+l.type+'">'+(l.type==='nhap'?'▲ Nhập':'▼ Xuất')+'</td><td class="'+l.type+'">'+(l.type==='nhap'?'+':'-')+fN(l.sl)+' '+l.dvt+'</td><td>'+(l.from||'—')+'</td><td>'+(l.nguoi||'—')+'</td><td>'+fN(l.ton_sau)+'</td></tr>').join('');openPDF(buildPDF('LỊCH SỬ GIAO DỊCH — XƯỞNG HẢI TÂN 2','Tổng: '+gdLog.length+' giao dịch | Ngày: '+fISO(new Date()),'<table><thead><tr><th>STT</th><th>Ngày</th><th>Giờ</th><th>Mã hàng</th><th>Tên</th><th>Loại GD</th><th>Số lượng</th><th>Nhập từ/Xuất đến</th><th>Người TH</th><th>Tồn sau</th></tr></thead><tbody>'+r+'</tbody></table>'));}
 function exportDMPDF(){const r=items.map((it,i)=>{const st=getSt(it);return '<tr><td>'+(i+1)+'</td><td style="font-size:9px">'+it.ma+'</td><td>'+it.ten+'</td><td>'+it.loai+'</td><td>'+it.dvt+'</td><td>'+fN(getTon(it,'kt'))+'</td><td>'+fN(getTon(it,'x1'))+'</td><td>'+fN(getTon(it,'x2'))+'</td><td class="'+st+'">'+fN(it.min)+'</td><td class="'+st+'">'+(st==='low'?'Thiếu':st==='warn'?'Sắp hết':'Đủ')+'</td></tr>';}).join('');openPDF(buildPDF('DANH MỤC LINH KIỆN — XƯỞNG HẢI TÂN 2','Tổng: '+items.length+' mặt hàng | Ngày: '+fISO(new Date()),'<table><thead><tr><th>STT</th><th>Mã hàng</th><th>Tên linh kiện</th><th>Loại</th><th>ĐVT</th><th>Kho Tổng</th><th>Xưởng 1</th><th>Xưởng 2</th><th>Tối thiểu</th><th>Trạng thái</th></tr></thead><tbody>'+r+'</tbody></table>'));}
