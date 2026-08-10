@@ -2457,13 +2457,27 @@ function renderDM(){
 
 function saveAllDM(){if(!requireAdmin())return;
   let c=0;
+  const now=new Date(),ds=fISO(now),gio=now.toTimeString().slice(0,5);
+  const LOC_NHAN={kt:'Kho Tổng',x1:'Xưởng 1',x2:'Xưởng 2'};
   document.querySelectorAll('[data-field]').forEach(inp=>{
     const it=items.find(x=>x.ma===inp.dataset.ma);if(!it)return;
     migrateItemTon(it);
     const f=inp.dataset.field;
     if(f==='ton_kt'||f==='ton_x1'||f==='ton_x2'){
       const loc=f.slice(4);const old=it.ton[loc];const val=parseFloat(inp.value)||0;
-      it.ton[loc]=val;if(val!==old)c++;
+      it.ton[loc]=val;
+      if(val!==old){
+        c++;
+        const chenhLech=val-old;
+        // Ghi lại vào Lịch Sử để "Tổng đã nhập/xuất" luôn khớp với tồn thực
+        // tế — kể cả khi tồn được sửa thẳng ở đây thay vì qua "+ Thêm giao dịch".
+        gdLog.push({
+          id:genId(),date:ds,time:gio,ma:it.ma,ten:it.ten,dvt:it.dvt,
+          type:chenhLech>=0?'nhap':'xuat',sl:Math.abs(chenhLech),loc,
+          from:'Điều chỉnh thủ công (Danh Mục)',nguoi:'',ton_sau:val,
+          note:'Sửa trực tiếp tồn '+LOC_NHAN[loc]+': '+fN(old)+' → '+fN(val)
+        });
+      }
     } else {
       const old=it[f];
       it[f]=f==='min'?parseFloat(inp.value)||0:(inp.value||'').trim();
@@ -2532,7 +2546,20 @@ function saveItem(){if(!requireAdmin())return;
         // Cập nhật mã trong lịch sử giao dịch để nhất quán khi tra cứu về sau
         gdLog.forEach(l=>{if(l.ma===oldMa)l.ma=ma;});
       }
+      const tonKtCu=it.ton.kt;
       it.ten=ten;it.dvt=dvt;it.loai=loai;it.ton.kt=ton;it.min=min;it.note=note;
+      if(ton!==tonKtCu){
+        // Cùng cơ chế ghi log như khi sửa trực tiếp ở Danh Mục — để "Tổng đã
+        // nhập/xuất" luôn khớp với tồn thực tế, dù sửa từ chỗ nào.
+        const chenhLech=ton-tonKtCu, now=new Date();
+        gdLog.push({
+          id:genId(),date:fISO(now),time:now.toTimeString().slice(0,5),
+          ma:it.ma,ten:it.ten,dvt:it.dvt,
+          type:chenhLech>=0?'nhap':'xuat',sl:Math.abs(chenhLech),loc:'kt',
+          from:'Điều chỉnh thủ công (Sửa mặt hàng)',nguoi:'',ton_sau:ton,
+          note:'Sửa trực tiếp tồn Kho Tổng: '+fN(tonKtCu)+' → '+fN(ton)
+        });
+      }
     }
     toast('Đã cập nhật: '+ten);
   } else {
