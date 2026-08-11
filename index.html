@@ -288,60 +288,6 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   </div>
 </div>
 
-<!-- MODAL NHẬP FILE CÔNG ĐOẠN (Ép/Phun/In) -->
-<div class="modal-overlay" id="modal-cd-import">
-  <div class="modal-box" style="max-width:640px">
-    <h3>Nhập file chuyển công đoạn <button onclick="closeModal(&#39;modal-cd-import&#39;)">✕</button></h3>
-    <div class="info-box">ℹ <b>File nhật ký hàng ngày</b> (có cột Ma hang/So luong, VD: file "Cần Hàng"): mặc định tính là công đoạn Ép, tự route theo cờ Qua Phun/Qua In đã tick. <b>File bảng tổng theo mã</b> (có cột Ép/Phun/In riêng): Ép/Phun được đồng bộ đúng số hiện tại; cột In cộng thêm đúng phần chênh lệch vào Kho Tổng — không lo trùng lặp dù đồng bộ nhiều lần.</div>
-    <div class="drop-zone" id="cd-drop-zone" onclick="document.getElementById(&#39;cd-file-in&#39;).click()">
-      ⬆ Kéo thả file công đoạn (.xlsx, .csv) vào đây hoặc bấm để chọn file
-    </div>
-    <input type="file" id="cd-file-in" accept=".xlsx,.xls,.csv,.txt" style="display:none" onchange="handleCdFile(this)">
-    <div id="cd-import-preview"></div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeModal(&#39;modal-cd-import&#39;)">Hủy</button>
-      <button class="btn btn-red" id="btn-ok-cd-import" style="display:none" onclick="confirmCdImport()">✓ Xác nhận cập nhật công đoạn</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL GHI NHẬN THỦ CÔNG CÔNG ĐOẠN -->
-<div class="modal-overlay" id="modal-cd">
-  <div class="modal-box">
-    <h3>Ghi nhận chuyển công đoạn <button onclick="closeModal(&#39;modal-cd&#39;)">✕</button></h3>
-    <div class="frow full">
-      <div class="ff">
-        <label>Linh kiện <span style="color:#c0392b">*</span></label>
-        <select id="mcd-ma" onchange="onPickCd()">
-          <option value="">-- Chọn linh kiện --</option>
-        </select>
-      </div>
-    </div>
-    <div class="item-info-bar" id="mcd-info-bar" style="display:none"></div>
-    <div class="frow">
-      <div class="ff">
-        <label>Công đoạn hoàn thành <span style="color:#c0392b">*</span></label>
-        <select id="mcd-congdoan" onchange="onPickCd()">
-          <option value="ep">Ép (bắt đầu — không trừ kho nào)</option>
-          <option value="phun">Phun (trừ tồn Ép, cộng tồn Phun)</option>
-          <option value="in">In (trừ tồn Phun, cộng thẳng vào Kho Tổng)</option>
-        </select>
-      </div>
-      <div class="ff"><label>Số lượng <span style="color:#c0392b">*</span></label><input id="mcd-sl" type="number" min="1" value="1"></div>
-    </div>
-    <div class="frow">
-      <div class="ff"><label>Ngày <span style="color:#c0392b">*</span></label><input id="mcd-ngay" type="date"></div>
-      <div class="ff"><label>Giờ thực hiện</label><input id="mcd-gio" type="time"></div>
-    </div>
-    <div class="frow full"><div class="ff"><label>Người thực hiện</label><input id="mcd-nguoi" placeholder="Tên nhân viên..."></div></div>
-    <div class="frow full"><div class="ff"><label>Ghi chú</label><input id="mcd-note" placeholder="Tuỳ chọn..."></div></div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeModal(&#39;modal-cd&#39;)">Hủy</button>
-      <button class="btn btn-green" onclick="saveCd()">✓ Lưu</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL SẢN PHẨM / ĐỊNH MỨC BOM -->
 <div class="modal-overlay" id="modal-product">
   <div class="modal-box" style="max-width:640px">
@@ -586,7 +532,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <span style="font-size:18px">🚒</span>
   <h1>Quản Lý Linh Kiện Xe Cứu Hỏa — Xưởng Hải Tân 2</h1>
   <span class="tbadge" id="hd-date">21/7/2026</span>
-  <span class="tbadge" style="opacity:.75;font-size:10px" title="Ngày cập nhật code lần gần nhất — nếu số này không đổi sau khi bạn cập nhật GitHub, nghĩa là trình duyệt/Pages đang tải bản cache cũ">Build: 2026-08-08</span>
+  <span class="tbadge" style="opacity:.75;font-size:10px" title="Ngày cập nhật code lần gần nhất — nếu số này không đổi sau khi bạn cập nhật GitHub, nghĩa là trình duyệt/Pages đang tải bản cache cũ">Build: 2026-08-11.2</span>
   <span class="tbadge-warn" id="hd-low" style="display: inline;">⚠ 39 mặt hàng thiếu</span>
   <span class="tb-btn" id="hd-cloud" title="Trạng thái đồng bộ dữ liệu đám mây" style="background: rgba(231, 76, 60, 0.35);">⚠️ Mất kết nối (chỉ lưu máy này)</span>
   <span class="tb-btn" id="hd-update-btn" onclick="applyPendingCloudUpdate()" style="display:none;background:#2ecc71;animation:pulseUpdate 1.5s ease-in-out infinite" title="Có dữ liệu mới từ máy khác, bấm để cập nhật màn hình">🔄 Có dữ liệu mới — Bấm để cập nhật</span>
@@ -601,7 +547,6 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div class="tab" onclick="switchTab(&#39;tq&#39;)">📊 Tổng quan</div>
   <div class="tab" onclick="switchTab(&#39;nx&#39;)">↕ Giao Dịch Hàng Ngày</div>
   <div class="tab" onclick="switchTab(&#39;tk&#39;)">📦 Tồn Kho</div>
-  <div class="tab" onclick="switchTab(&#39;cd&#39;)">🏗️ Công Đoạn SX</div>
   <div class="tab" onclick="switchTab(&#39;cp&#39;)">🔀 Cấp Phát Xưởng</div>
   <div class="tab" onclick="switchTab(&#39;bom&#39;)">🧩 Định Mức BOM</div>
   <div class="tab" onclick="switchTab(&#39;sx&#39;)">🏭 Sản Lượng SX</div>
@@ -675,6 +620,10 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <div class="chart-title">👷 Biểu Đồ Nhân Sự Theo Ngày (Sáng/Chiều vs Định mức)</div>
     <div id="tq-staff-chart" style="min-width:600px"></div>
   </div>
+  <div class="chart-wrap" style="margin-bottom:14px;overflow-x:auto">
+    <div class="chart-title">⚠ Biểu Đồ Tỷ Lệ Hàng Lỗi Hàng Ngày (%)</div>
+    <div id="tq-defect-chart" style="min-width:600px"></div>
+  </div>
     <div class="chart-wrap"><div class="chart-title">Mặt hàng cần chú ý</div><div id="low-list" style="max-height:200px;overflow-y:auto"><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281801-001</div><div style="font-size:12px;font-weight:600">SÀN XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281801-002</div><div style="font-size:12px;font-weight:600">NẮP GIỮ BĂNG MẠCH LOA XE C…</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281801-003</div><div style="font-size:12px;font-weight:600">NẮP CÀI LỌA XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-001</div><div style="font-size:12px;font-weight:600">LINH KIỆN ĐÈN XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-002</div><div style="font-size:12px;font-weight:600">THÙNG NƯỚC CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-003</div><div style="font-size:12px;font-weight:600">LINH KIỆN ĐẦU XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-004</div><div style="font-size:12px;font-weight:600">LINH KIỆN THÂN XE (CỠ RỘNG)</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-005</div><div style="font-size:12px;font-weight:600">BẢNG ĐIỀU KHIỂN BÊN PHẢI</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281802-006</div><div style="font-size:12px;font-weight:600">LINH KIỆN ĐUÔI XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281803-001</div><div style="font-size:12px;font-weight:600">2 QUAI THOÁT KẺ TRÊN SÀN XE</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281803-002</div><div style="font-size:12px;font-weight:600">BẮC THANG XE CỨU HỎA BÊN P…</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">H02-08281803-003</div><div style="font-size:12px;font-weight:600">BẮC THANG XE CỨU HỎA BÊN T…</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-004</div><div style="font-size:12px;font-weight:600">BIÊN TRÁI CỬA BÌNH CHỨA CHÁY</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-005</div><div style="font-size:12px;font-weight:600">CỬA BÊN PHẢI BÌNH CHỨA CHÁY</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-006</div><div style="font-size:12px;font-weight:600">GIÁ ĐỠ CẦN THANG CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-007</div><div style="font-size:12px;font-weight:600">CỬA SỐ XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21003-008</div><div style="font-size:12px;font-weight:600">TĂNG NƯỚC TƠ CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">Z01-02S21004-001</div><div style="font-size:12px;font-weight:600">THÂN XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21005-001</div><div style="font-size:12px;font-weight:600">THANG ĐẦU XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21005-002</div><div style="font-size:12px;font-weight:600">THANG NGẮN XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21006-001</div><div style="font-size:12px;font-weight:600">ĐÀI CAO XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-001</div><div style="font-size:12px;font-weight:600">GIÁ ĐỠ CẦU THANG CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-002</div><div style="font-size:12px;font-weight:600">CẤY THANG TRÁI</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-003</div><div style="font-size:12px;font-weight:600">CẤY THANG PHẢI</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-004</div><div style="font-size:12px;font-weight:600">LINH KIỆN LỖ GIÁ CẦU THANG</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21007-005</div><div style="font-size:12px;font-weight:600">LINH KIỆN DINH GIÁ CẦU THANG</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B01-02S21009-001</div><div style="font-size:12px;font-weight:600">ĐẦU XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21009-002</div><div style="font-size:12px;font-weight:600">DÀN Ở ĐẦU XE CỨU HỎA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21019-002</div><div style="font-size:12px;font-weight:600">CÔNG TẮC XE CỨU HỎA / MÁY …</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21023-001</div><div style="font-size:12px;font-weight:600">BÁNH XE</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B02-02S21023-002</div><div style="font-size:12px;font-weight:600">LỐP XE</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">B42-82S19000-002</div><div style="font-size:12px;font-weight:600">PCBA</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C01-02S00000-033</div><div style="font-size:12px;font-weight:600">ỐC VÍT (loại 033)</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C01-02S00000-040</div><div style="font-size:12px;font-weight:600">ỐC VÍT (loại 040)</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C01-02S00000-039</div><div style="font-size:12px;font-weight:600">ỐC VÍT (loại 039)</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C02-20005020-001</div><div style="font-size:12px;font-weight:600">ĐAI ỐC</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C16-00020052321</div><div style="font-size:12px;font-weight:600">TRỤC CHỐT NGƯỢC</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C93-51173116-312</div><div style="font-size:12px;font-weight:600">TẤM PHẨM CƠ VÌM</div></div><span class="sb sb-red">0 / 100</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0f0f0"><div><div style="font-size:10px;color:#999">C43-50173116-311</div><div style="font-size:12px;font-weight:600">TẤM PHẨM CỰC DƯƠNG</div></div><span class="sb sb-red">0 / 100</span></div></div></div>
 </div>
 
@@ -731,6 +680,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <button class="btn" onclick="exportTKCSV()">⬇ CSV</button>
     <button class="btn btn-blue" onclick="exportTKPDF()">📄 PDF</button>
     <button class="btn btn-red" onclick="openModal('modal-canhang')">⬆ Nhập Cần Hàng</button>
+    <button class="btn" style="background:#fdecea;color:#c0392b;border:1px solid #f5c6c2" onclick="if(!requireAdmin())return;if(confirm('Dọn dữ liệu trạm cân CŨ: chuyển các giao dịch trạm cân đang ở Xưởng 1 sang Xưởng 2.\\n\\n⚠ CHỈ dùng cho giai đoạn còn lỗi mặc định trước đây — vì Xưởng 1 giờ có thể là lựa chọn ĐÚNG (trạm cân đã tự chọn được xưởng). Chỉ bấm nếu bạn chắc chắn cần dọn dữ liệu cũ.\\n\\nTiếp tục?')){const n=suaTramCanXuongSaiVeXuong2();renderTonKho();if(n===0)toast('Không có gì cần sửa.');}">🔧 Dọn dữ liệu trạm cân cũ (X1→X2)</button>
   </div>
   <div style="display:flex;gap:18px;align-items:center;margin-bottom:10px;padding:10px 14px;background:#f4f6f8;border-radius:8px;font-size:13px">
     <span>📥 <b>Tổng nhập hôm nay:</b> <span id="tk-sum-nhap" style="color:#1e8449;font-weight:700">0</span></span>
@@ -756,50 +706,6 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
       <th>Mức tối thiểu</th><th>Trạng thái</th>
     </tr></thead>
     <tbody id="tk-tp-body"></tbody></table>
-  </div>
-</div>
-
-<!-- CÔNG ĐOẠN SX (Ép → Phun → In) — chỉ áp dụng cho linh kiện có cờ congDoan=true -->
-<div class="pg" id="pg-cd">
-  <div class="info-box">ℹ <b>Mặc định mỗi linh kiện chỉ qua Ép rồi sẵn sàng lắp ráp ngay</b> (không cần đánh dấu gì thêm). Chỉ những linh kiện nào <b>thực sự cần Phun và/hoặc In</b> mới tick chọn ở bảng bên dưới — khi đó, linh kiện sẽ tạm giữ ở kho trung gian (Ép/Phun) cho đến khi hoàn thành bước cuối cùng thì mới tự động cộng vào <b>Kho Tổng</b> (sẵn sàng cho Kế Hoạch Lắp Ráp).</div>
-
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-    <b style="font-size:12px">📊 Tồn theo công đoạn hiện tại</b>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-red" onclick="openModal('modal-cd-import')">⬆ Nhập file công đoạn</button>
-      <button class="btn btn-green" onclick="openCdModal()">+ Ghi nhận thủ công</button>
-      <button class="btn" style="background:#fdecea;color:#c0392b;border:1px solid #f5c6c2" onclick="resetCongDoanData()">🗑️ Reset toàn bộ dữ liệu công đoạn</button>
-    </div>
-  </div>
-  <div class="tbl-wrap" style="margin-bottom:18px">
-    <table><thead><tr>
-      <th class="tl">Mã linh kiện</th><th class="tl">Tên linh kiện</th><th>Thuộc mã TP</th>
-      <th>Qua Phun?</th><th>Qua In?</th>
-      <th>Tồn Ép (chờ Phun)</th><th>Tồn Phun (chờ In)</th><th>Tồn Kho Tổng (sẵn sàng lắp ráp)</th>
-    </tr></thead><tbody id="cd-wip-body"></tbody></table>
-  </div>
-
-  <div class="day-header">
-    <div class="day-nav">
-      <button class="btn" onclick="chDayCd(-1)">‹</button>
-      <span class="cur-date" id="disp-date-cd">Thứ Ba, 21/07/2026</span>
-      <button class="btn" onclick="chDayCd(1)">›</button>
-      <button class="btn btn-red" onclick="goTodayCd()">Hôm nay</button>
-    </div>
-    <div class="day-summary">
-      <span style="color:#185FA5;font-weight:700">Lượt ghi: <span id="cd-day-count">0</span></span>
-    </div>
-    <div style="margin-left:auto;display:flex;gap:8px">
-      <button class="btn" onclick="exportCdCSV()">⬇ CSV</button>
-      <button class="btn btn-blue" onclick="exportCdPDF()">📄 PDF</button>
-    </div>
-  </div>
-  <div class="tbl-wrap">
-    <table><thead><tr>
-      <th style="width:34px">STT</th><th style="width:50px">Giờ</th>
-      <th class="tl">Mã linh kiện</th><th class="tl">Tên linh kiện</th>
-      <th>Công đoạn</th><th>SL</th><th>Người TH</th><th>Tồn sau</th><th class="tl">Ghi chú</th><th style="width:36px"></th>
-    </tr></thead><tbody id="cd-body"><tr><td colspan="10" style="text-align:center;padding:24px;color:#999">Chưa có lượt ghi nhận nào trong ngày này.</td></tr></tbody></table>
   </div>
 </div>
 
@@ -982,21 +888,64 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     </div>
     <div class="day-summary">
       <span style="color:#185FA5;font-weight:700">🏭 SX: <span id="sx-day-sum">0</span></span>
+      <span style="color:#1e8449;font-weight:700">✓ OK: <span id="sx-day-ok">0</span></span>
+      <span style="color:#c0392b;font-weight:700">✗ NG: <span id="sx-day-ng">0</span></span>
       <span style="color:#555">Lượt ghi: <span id="sx-day-count" style="font-weight:700">0</span></span>
     </div>
     <button class="btn btn-green" onclick="openSxModal()" style="margin-left:auto">+ Ghi nhận sản lượng</button>
+    <button class="btn btn-amber" onclick="openSuaOkModal()">🔧 Nhập hàng đã sửa OK</button>
     <button class="btn" onclick="exportSxCSV()">⬇ CSV</button>
     <button class="btn btn-blue" onclick="exportSxPDF()">📄 PDF</button>
   </div>
-  <div class="info-box">ℹ Nhập sản lượng thành phẩm hoàn thành trong ngày. Hệ thống sẽ <b>tự động trừ linh kiện</b> theo định mức BOM ra tồn kho linh kiện, và <b>cộng vào tồn thành phẩm</b> đang chờ tại line sản xuất (chưa xuất đi). Nhân sự (sáng/chiều) được nhập kèm theo từng lượt ghi nhận sản lượng.</div>
+  <div class="info-box">ℹ Nhập sản lượng thành phẩm hoàn thành trong ngày. Hệ thống sẽ <b>tự động trừ linh kiện</b> theo định mức BOM ra tồn kho linh kiện. <b>Chỉ phần SL OK</b> (= SL sản xuất − tổng lỗi) được cộng vào tồn thành phẩm ngay; phần NG (lỗi) tạm giữ riêng, chỉ cộng vào tồn khi bạn ghi nhận "Nhập hàng đã sửa OK". Nhân sự (sáng/chiều) được nhập kèm theo từng lượt ghi nhận sản lượng.</div>
+  <div class="cards4" style="grid-template-columns:repeat(2,1fr);margin-bottom:14px">
+    <div class="card"><div class="card-label">⚠ Tổng NG lũy kế (chưa sửa xong)</div><div class="card-val cr" id="s-ng-luyke">0</div></div>
+    <div class="card"><div class="card-label">🔧 Tổng đã sửa OK lũy kế</div><div class="card-val cg" id="s-suaok-luyke">0</div></div>
+  </div>
   <div class="tbl-wrap">
     <table><thead><tr>
       <th style="width:34px">STT</th><th style="width:50px">Giờ</th>
       <th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th>
-      <th>SL sản xuất</th><th>ĐVT</th><th>Xưởng SX</th><th>Người TH</th><th>👷 Nhân sự (S/C)</th><th>Tồn TP sau SX</th><th class="tl">Lỗi phát sinh</th><th class="tl">Ghi chú</th><th style="width:36px"></th>
-    </tr></thead><tbody id="sx-body"><tr><td colspan="13" style="text-align:center;padding:32px;color:#999"><div style="font-size:28px;margin-bottom:8px">🏭</div>Chưa có sản lượng nào được ghi nhận trong ngày này.<br><span style="font-size:11px">Bấm <b>+ Ghi nhận sản lượng</b> để nhập.</span></td></tr></tbody></table>
+      <th>SL sản xuất</th><th>SL OK</th><th>SL NG</th><th>ĐVT</th><th>Xưởng SX</th><th>Người TH</th><th>👷 Nhân sự (S/C)</th><th>Tồn TP sau SX</th><th class="tl">Lỗi phát sinh</th><th class="tl">Ghi chú</th><th style="width:36px"></th>
+    </tr></thead><tbody id="sx-body"><tr><td colspan="15" style="text-align:center;padding:32px;color:#999"><div style="font-size:28px;margin-bottom:8px">🏭</div>Chưa có sản lượng nào được ghi nhận trong ngày này.<br><span style="font-size:11px">Bấm <b>+ Ghi nhận sản lượng</b> để nhập.</span></td></tr></tbody></table>
   </div>
   <div style="font-size:11px;color:#999;margin-top:4px" id="sx-count">Hiển thị 0 lượt ghi nhận trong ngày 2026-07-21</div>
+
+  <div style="margin-top:22px;font-weight:700;font-size:13px;color:#333;display:flex;align-items:center;gap:6px">🔧 Hàng đã sửa OK — trong ngày</div>
+  <div class="tbl-wrap" style="margin-top:8px">
+    <table><thead><tr>
+      <th style="width:34px">STT</th><th style="width:50px">Giờ</th>
+      <th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th>
+      <th>SL đã sửa</th><th>ĐVT</th><th>Xưởng nhận</th><th>Người TH</th><th>Tồn TP sau</th><th class="tl">Ghi chú</th><th style="width:36px"></th>
+    </tr></thead><tbody id="suaok-body"><tr><td colspan="11" style="text-align:center;padding:20px;color:#999">Chưa có hàng sửa OK nào được ghi nhận trong ngày này.</td></tr></tbody></table>
+  </div>
+</div>
+
+<!-- MODAL NHẬP HÀNG ĐÃ SỬA OK -->
+<div class="modal-overlay" id="modal-suaok">
+  <div class="modal-box">
+    <h3>Nhập hàng đã sửa OK <button onclick="closeModal('modal-suaok')">✕</button></h3>
+    <div class="info-box">ℹ Số lượng nhập ở đây sẽ được <b>trừ khỏi Tổng NG lũy kế</b> và <b>cộng thẳng vào tồn thành phẩm</b> (vì hàng đã sửa xong, dùng được).</div>
+    <div class="frow full">
+      <div class="ff">
+        <label>Thành phẩm <span style="color:#c0392b">*</span></label>
+        <select id="msok-ma"></select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="ff"><label>Số lượng đã sửa OK <span style="color:#c0392b">*</span></label><input id="msok-sl" type="number" min="1" value="1"></div>
+      <div class="ff">
+        <label>Xưởng nhận <span style="color:#c0392b">*</span></label>
+        <select id="msok-xuong"><option value="x1">Xưởng 1</option><option value="x2">Xưởng 2</option></select>
+      </div>
+    </div>
+    <div class="frow full"><div class="ff"><label>Người thực hiện</label><input id="msok-nguoi" placeholder="Tên nhân viên..."></div></div>
+    <div class="frow full"><div class="ff"><label>Ghi chú</label><input id="msok-note" placeholder="Tuỳ chọn..."></div></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-suaok')">Hủy</button>
+      <button class="btn btn-amber" onclick="saveSuaOk()">✓ Lưu — Cộng vào tồn thành phẩm</button>
+    </div>
+  </div>
 </div>
 
 <!-- DOANH THU -->
@@ -1592,6 +1541,7 @@ let returnLog=loadJ('returnlog',[]);
 let staffLog=loadJ('stafflog',{});
 let tpTransferLog=loadJ('tptransferlog',[]);
 let congDoanLog=loadJ('congdoanlog',[]);
+let suaOkLog=loadJ('suaoklog',[]); // lượt "nhập hàng đã sửa OK" — trừ bớt tổng NG lũy kế, cộng vào tồn thành phẩm
 let defectCats=loadJ('defectcats',JSON.parse(JSON.stringify(DFLT_DEFECT_CATS)));
 let planData=loadJ('plandata',{});
 function tomorrowISO(){const d=new Date();d.setDate(d.getDate()+1);return fISO(d);}
@@ -1683,7 +1633,35 @@ function updateAdminUI(){
   else{el.textContent='🔒 Chưa đăng nhập';el.onclick=showLoginGate;el.style.cursor='pointer';el.style.background='rgba(255,255,255,.15)';}
 }
 
-function persist(){sSet('items',JSON.stringify(items));sSet('gdlog',JSON.stringify(gdLog));sSet('rq',JSON.stringify(rqRows));sSet('rqc',rqCtr);sSet('products',JSON.stringify(products));sSet('prodlog',JSON.stringify(prodLog));sSet('shiplog',JSON.stringify(shipLog));sSet('alloclog',JSON.stringify(allocLog));sSet('defectcats',JSON.stringify(defectCats));sSet('plandata',JSON.stringify(planData));sSet('orders',JSON.stringify(orders));sSet('returnlog',JSON.stringify(returnLog));sSet('stafflog',JSON.stringify(staffLog));sSet('tptransferlog',JSON.stringify(tpTransferLog));sSet('congdoanlog',JSON.stringify(congDoanLog));if(!suppressCloudPush)pushCloud();}
+function persist(){sSet('items',JSON.stringify(items));sSet('gdlog',JSON.stringify(gdLog));sSet('rq',JSON.stringify(rqRows));sSet('rqc',rqCtr);sSet('products',JSON.stringify(products));sSet('prodlog',JSON.stringify(prodLog));sSet('shiplog',JSON.stringify(shipLog));sSet('alloclog',JSON.stringify(allocLog));sSet('defectcats',JSON.stringify(defectCats));sSet('plandata',JSON.stringify(planData));sSet('orders',JSON.stringify(orders));sSet('returnlog',JSON.stringify(returnLog));sSet('stafflog',JSON.stringify(staffLog));sSet('tptransferlog',JSON.stringify(tpTransferLog));sSet('congdoanlog',JSON.stringify(congDoanLog));sSet('suaoklog',JSON.stringify(suaOkLog));if(!suppressCloudPush)pushCloud();}
+
+// Trạm cân trước đây mặc định nhập nhầm vào Xưởng 1 (đúng ra phải là Xưởng 2).
+// Hàm này tự rà soát MỌI giao dịch có nguồn "Trạm cân — tự động" đang nằm ở
+// Xưởng 1, chuyển đúng sang Xưởng 2 (trừ tồn X1, cộng đúng vào X2), và sửa
+// lại chính dòng lịch sử đó. An toàn để chạy lại nhiều lần (idempotent) —
+// sau khi đã sửa hết, các lần chạy sau sẽ không tìm thấy gì để sửa nữa.
+function suaTramCanXuongSaiVeXuong2(){
+  let daSua=0;
+  gdLog.forEach(l=>{
+    if(l.loc==='x1' && (l.from||'').indexOf('Trạm cân')===0){
+      const it=items.find(x=>x.ma===l.ma);
+      if(it){
+        migrateItemTon(it);
+        it.ton.x1=Math.max(0,(it.ton.x1||0)-l.sl);
+        it.ton.x2=(it.ton.x2||0)+l.sl;
+        l.ton_sau=getTon(it,'x2');
+      }
+      l.loc='x2';
+      l.note=(l.note||'')+' (đã tự động chuyển từ Xưởng 1 sang Xưởng 2 do lỗi mặc định trạm cân)';
+      daSua++;
+    }
+  });
+  if(daSua>0){
+    persist();
+    toast('🔧 Đã tự động chuyển '+daSua+' giao dịch trạm cân từ Xưởng 1 sang Xưởng 2');
+  }
+  return daSua;
+}
 
 // ── ĐỒNG BỘ DỮ LIỆU ĐÁM MÂY (nhiều máy dùng chung 1 dữ liệu, real-time) ──────
 // Dùng Firebase Realtime Database qua REST API + Server-Sent Events (không cần SDK).
@@ -1701,7 +1679,7 @@ function setCloudStatus(state){
 }
 
 function collectState(){
-  return {items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,allocLog,defectCats,planData,orders,returnLog,staffLog,tpTransferLog,congDoanLog,_ts:Date.now()};
+  return {items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,allocLog,defectCats,planData,orders,returnLog,staffLog,tpTransferLog,congDoanLog,suaOkLog,_ts:Date.now()};
 }
 
 function pushCloud(){
@@ -1744,11 +1722,12 @@ function applyCloudState(state){
   staffLog=state.staffLog||staffLog;
   tpTransferLog=state.tpTransferLog||tpTransferLog;
   congDoanLog=state.congDoanLog||congDoanLog;
+  suaOkLog=state.suaOkLog||suaOkLog;
   persist(); // chỉ lưu cache máy này, không đẩy ngược lên cloud (suppressCloudPush đang bật)
   suppressCloudPush=false;
   // Vẽ lại toàn bộ giao diện đang có để phản ánh dữ liệu mới nhất
   updateSummary();
-  renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDoanhThu();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();renderOrders();renderTV();renderDayNktp();renderCongDoanWip();renderDayCongDoan();
+  renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDoanhThu();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();renderOrders();renderTV();renderDayNktp();
   // Chỉ hiện thông báo tối đa 1 lần mỗi 4 giây — tránh dồn dập thông báo/nháy màn hình
   // khi nhiều máy trong xưởng cùng lưu dữ liệu liên tiếp trong thời gian ngắn
   const nowTs=Date.now();
@@ -1853,7 +1832,7 @@ function importBackup(file){if(!requireAdmin())return;
     persist();
     document.getElementById('backup-file-input').value='';
     switchTab('tq');
-    renderTonKho();renderDayGd();renderDM();renderSP();renderDaySx();renderDayXh();renderOrders();updateSummary();renderTV();renderDayNktp();renderCongDoanWip();renderDayCongDoan();
+    renderTonKho();renderDayGd();renderDM();renderSP();renderDaySx();renderDayXh();renderOrders();updateSummary();renderTV();renderDayNktp();
     toast('✅ Đã nhập dữ liệu thành công từ file sao lưu!');
   };
   reader.onerror=function(){toast('Không đọc được file!',true);};
@@ -1912,13 +1891,12 @@ function switchTab(id){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('pg-'+id).classList.add('active');
-  const tabs=['tq','nx','tk','cd','cp','bom','sx','dt','dh','xh','nktp','tv','kh','rq','ls','dm'];
+  const tabs=['tq','nx','tk','cp','bom','sx','dt','dh','xh','nktp','tv','kh','rq','ls','dm'];
   document.querySelectorAll('.tab')[tabs.indexOf(id)].classList.add('active');
   if(id==='tq')updateSummary();
   if(id==='ls')renderHis();
   if(id==='dm')renderDM();
   if(id==='tk')renderTonKho();
-  if(id==='cd'){renderCongDoanWip();renderDayCongDoan();}
   if(id==='nx')renderDayGd();
   if(id==='cp'){document.getElementById('disp-date-cp').textContent=fDate(curDateCp);renderDayCp();}
   if(id==='bom')renderSP();
@@ -2310,6 +2288,62 @@ function buildStaffSVG(labels,staffSangArr,staffChieuArr,staffTarget){
     +'<line x1="190" y1="5" x2="206" y2="5" stroke="#8e44ad" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.7"/><text x="210" y="9" font-size="9" fill="#555">Định mức NS</text>'
     +'</g></svg>';
 }
+function buildDefectRateSVG(labels,rateArr){
+  const W=Math.max(680,labels.length*46),H=280,padL=50,padR=16,padT=28,padB=56;
+  const chartW=W-padL-padR,chartH=H-padT-padB;
+  const validVals=rateArr.filter(v=>v!==null);
+  const maxV=Math.max(10,niceMaxOf(validVals.length?validVals:[0]));
+  const n=labels.length||1;
+  const slotW=n>1?chartW/(n-1):chartW;
+  const xFor=i=>n>1?padL+slotW*i:padL+chartW/2;
+  const yFor=v=>padT+chartH-(v/maxV)*chartH;
+  let grid='',steps=5;
+  for(let s=0;s<=steps;s++){
+    const val=maxV*s/steps,y=yFor(val);
+    grid+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#eee" stroke-width="1"/>'
+      +'<text x="'+(padL-8)+'" y="'+(y+3)+'" font-size="9" fill="#999" text-anchor="end">'+Math.round(val)+'%</text>';
+  }
+  let segs='',seg=[];
+  function flushSeg(){
+    if(seg.length>1){
+      const linePts=seg.map(p=>p[0]+','+p[1]).join(' ');
+      const areaPts=seg[0][0]+','+(padT+chartH)+' '+linePts+' '+seg[seg.length-1][0]+','+(padT+chartH);
+      segs+='<polygon points="'+areaPts+'" fill="#c0392b22"/><polyline points="'+linePts+'" fill="none" stroke="#c0392b" stroke-width="2.5"/>';
+    }
+    seg=[];
+  }
+  rateArr.forEach((v,i)=>{
+    if(v===null){flushSeg();return;}
+    seg.push([xFor(i),yFor(v)]);
+  });
+  flushSeg();
+  let dotsLabels='';
+  rateArr.forEach((v,i)=>{
+    const x=xFor(i);
+    if(v===null){
+      const y=padT+chartH;
+      dotsLabels+='<circle cx="'+x+'" cy="'+y+'" r="3" fill="#fff" stroke="#bbb" stroke-width="1.5"/>';
+      dotsLabels+='<text x="'+x+'" y="'+(y-8)+'" font-size="8" fill="#999" text-anchor="middle">chưa SX</text>';
+    }else{
+      const y=yFor(v);
+      dotsLabels+='<circle cx="'+x+'" cy="'+y+'" r="3" fill="#c0392b" stroke="#fff" stroke-width="1"/>';
+      dotsLabels+='<text x="'+x+'" y="'+(y-8)+'" font-size="8" fill="#922b1e" text-anchor="middle" font-weight="700">'+(Math.round(v*10)/10)+'%</text>';
+    }
+  });
+  let xLabels='';
+  labels.forEach((lb,i)=>{
+    const x=xFor(i),y=H-padB+14;
+    xLabels+='<text x="'+x+'" y="'+y+'" font-size="9" fill="#666" text-anchor="end" transform="rotate(-40 '+x+' '+y+')">'+lb+'</text>';
+  });
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+H+'px;display:block" xmlns="http://www.w3.org/2000/svg">'
+    +'<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="transparent"/>'
+    +grid+segs+dotsLabels+xLabels
+    +'<line x1="'+padL+'" y1="'+padT+'" x2="'+padL+'" y2="'+(padT+chartH)+'" stroke="#ccc"/>'
+    +'<line x1="'+padL+'" y1="'+(padT+chartH)+'" x2="'+(W-padR)+'" y2="'+(padT+chartH)+'" stroke="#ccc"/>'
+    +'<g transform="translate('+(W-170)+',10)">'
+    +'<rect x="0" y="0" width="10" height="10" fill="#c0392b55" stroke="#c0392b"/><text x="14" y="9" font-size="9" fill="#555">Tỷ lệ hàng lỗi (%)</text>'
+    +'</g></svg>';
+}
 function fISOLocal(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 let tqRangeFrom=null,tqRangeTo=null;
 function initTqRange(){
@@ -2341,12 +2375,12 @@ function setTqRangePreset(p){
   renderOverviewCharts();
 }
 function renderOverviewCharts(){
-  const revEl=document.getElementById('tq-revenue-chart'),qtyEl=document.getElementById('tq-qty-chart'),staffEl=document.getElementById('tq-staff-chart');
+  const revEl=document.getElementById('tq-revenue-chart'),qtyEl=document.getElementById('tq-qty-chart'),staffEl=document.getElementById('tq-staff-chart'),defectEl=document.getElementById('tq-defect-chart');
   if(!revEl||!qtyEl||!staffEl)return;
   if(!tqRangeFrom||!tqRangeTo)initTqRange();
   const daysInRange=[];
   for(let d=new Date(tqRangeFrom+'T00:00:00');fISOLocal(d)<=tqRangeTo;d.setDate(d.getDate()+1)){daysInRange.push(fISOLocal(d));}
-  if(!daysInRange.length){revEl.innerHTML=qtyEl.innerHTML=staffEl.innerHTML='<div style="padding:24px;text-align:center;color:#999">Chưa có dữ liệu.</div>';return;}
+  if(!daysInRange.length){revEl.innerHTML=qtyEl.innerHTML=staffEl.innerHTML='<div style="padding:24px;text-align:center;color:#999">Chưa có dữ liệu.</div>';if(defectEl)defectEl.innerHTML='<div style="padding:24px;text-align:center;color:#999">Chưa có dữ liệu.</div>';return;}
   const labels=daysInRange.map(ds=>{const p=ds.split('-');return p[2]+'/'+p[1];});
   const actualRevenue=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>{
     const p=products.find(x=>x.ma===l.ma);const gia=p?(p.gia||0):(l.gia||0);return s+l.sl*gia;
@@ -2355,14 +2389,17 @@ function renderOverviewCharts(){
     const p=products.find(x=>x.ma===r.ma);return s+(r.sl||0)*(p?(p.gia||0):0);
   },0));
   const actualQty=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>s+l.sl,0));
+  const ngQty=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>s+layNgCuaLuot(l),0));
   const staffSang=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>s+(l.nsSang||0),0));
   const staffChieu=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>s+(l.nsChieu||0),0));
   const QTY_TARGET=2500;
   const STAFF_TARGET=25;
   const pctArr=daysInRange.map((ds,i)=>planRevenue[i]>0?Math.round((actualRevenue[i]/planRevenue[i])*1000)/10:null);
+  const defectRateArr=daysInRange.map((ds,i)=>actualQty[i]>0?Math.round((ngQty[i]/actualQty[i])*1000)/10:null);
   revEl.innerHTML=buildRevenuePctSVG(labels,pctArr);
   qtyEl.innerHTML=buildQtyTargetSVG(labels,actualQty,QTY_TARGET);
   staffEl.innerHTML=buildStaffSVG(labels,staffSang,staffChieu,STAFF_TARGET);
+  if(defectEl)defectEl.innerHTML=buildDefectRateSVG(labels,defectRateArr);
 }
 function updateSummary(){
   const low=items.filter(i=>getSt(i)==='low'),warn=items.filter(i=>getSt(i)==='warn'),ok=items.filter(i=>getSt(i)==='ok');
@@ -3072,6 +3109,8 @@ function saveSx(){if(!requireAdmin())return;
   if(!dateVal){toast('Vui lòng chọn ngày sản xuất!',true);return;}
   const ds=dateVal;
   const loi=readDefectInputs();
+  const slNg=Object.values(loi).reduce((s,v)=>s+(parseFloat(v)||0),0);
+  const slOk=Math.max(0,sl-slNg);
   const consumedIds=[];
   bom.forEach(b=>{
     const it=items.find(x=>x.ma===b.ma);
@@ -3082,29 +3121,48 @@ function saveSx(){if(!requireAdmin())return;
     gdLog.push({id:gid,date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,type:'xuat',sl:need,loc,from:'Sản xuất — '+p.ma+' ('+p.ten+') tại '+LOC_LABELS[loc],nguoi,ton_sau:getTon(it,loc),note:'Tự động trừ theo định mức BOM sản xuất'});
     consumedIds.push(gid);
   });
-  addTonSP(p,loc,sl);
+  // Chỉ phần SL OK được cộng ngay vào tồn thành phẩm — phần NG (lỗi) tạm
+  // giữ riêng (chỉ theo dõi qua Tổng NG lũy kế), chờ ghi nhận "đã sửa OK"
+  // mới thật sự cộng vào tồn.
+  addTonSP(p,loc,slOk);
   const gia=p.gia||0,doanhthu=sl*gia;
-  prodLog.push({id:genId(),date:ds,time,ma:p.ma,ten:p.ten,dvt:p.dvt,sl,xuong:loc,nguoi,note,ton_sau:getTonSP(p,loc),consumedIds,loi,gia,doanhthu,nsSang,nsChieu});
+  prodLog.push({id:genId(),date:ds,time,ma:p.ma,ten:p.ten,dvt:p.dvt,sl,slOk,slNg,xuong:loc,nguoi,note,ton_sau:getTonSP(p,loc),consumedIds,loi,gia,doanhthu,nsSang,nsChieu});
   persist();
   closeModal('modal-sx');
   if(fISO(curDateSx)!==ds){curDateSx=new Date(ds+'T00:00:00');document.getElementById('disp-date-sx').textContent=fDate(curDateSx);}
   renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();renderOrders();updateSummary();
-  toast('🏭 Đã ghi nhận SX '+fN(sl)+' '+p.dvt+' — '+p.ten+' (đã tự trừ linh kiện tại '+LOC_LABELS[loc]+')'+(doanhthu?' | Doanh thu: '+fN(doanhthu)+'đ':''));
+  toast('🏭 Đã ghi nhận SX '+fN(sl)+' '+p.dvt+' — '+p.ten+' (OK: '+fN(slOk)+', NG: '+fN(slNg)+' — đã tự trừ linh kiện tại '+LOC_LABELS[loc]+')'+(doanhthu?' | Doanh thu: '+fN(doanhthu)+'đ':''));
 }
 // ── NHÂN SỰ: đã chuyển sang nhập kèm theo từng lượt ghi nhận sản lượng (xem saveSx/msx-ns-sang/msx-ns-chieu) ──
+function layNgCuaLuot(r){
+  return r.slNg!==undefined?r.slNg:Object.values(r.loi||{}).reduce((a,v)=>a+(parseFloat(v)||0),0);
+}
+function laySlOkCuaLuot(r){
+  return r.slOk!==undefined?r.slOk:Math.max(0,r.sl-layNgCuaLuot(r));
+}
+function tongNGSanXuat(){return prodLog.reduce((s,r)=>s+layNgCuaLuot(r),0);}
+function tongDaSuaOkLuyKe(){return suaOkLog.reduce((s,r)=>s+r.sl,0);}
+function tongNGLuyKe(){return Math.max(0,tongNGSanXuat()-tongDaSuaOkLuyKe());}
 function renderDaySx(){
   const ds=fISO(curDateSx);
   const rows=prodLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time));
   document.getElementById('sx-day-sum').textContent=fN(rows.reduce((s,r)=>s+r.sl,0));
+  document.getElementById('sx-day-ok').textContent=fN(rows.reduce((s,r)=>s+laySlOkCuaLuot(r),0));
+  document.getElementById('sx-day-ng').textContent=fN(rows.reduce((s,r)=>s+layNgCuaLuot(r),0));
   document.getElementById('sx-day-count').textContent=rows.length;
   document.getElementById('sx-count').textContent='Hiển thị '+rows.length+' lượt ghi nhận trong ngày '+ds;
-  if(!rows.length){document.getElementById('sx-body').innerHTML='<tr><td colspan="13" style="text-align:center;padding:32px;color:#999"><div style="font-size:28px;margin-bottom:8px">🏭</div>Chưa có sản lượng nào được ghi nhận trong ngày này.<br><span style="font-size:11px">Bấm <b>+ Ghi nhận sản lượng</b> để nhập.</span></td></tr>';return;}
+  const elNg=document.getElementById('s-ng-luyke'),elSuaOk=document.getElementById('s-suaok-luyke');
+  if(elNg)elNg.textContent=fN(tongNGLuyKe());
+  if(elSuaOk)elSuaOk.textContent=fN(tongDaSuaOkLuyKe());
+  if(!rows.length){document.getElementById('sx-body').innerHTML='<tr><td colspan="15" style="text-align:center;padding:32px;color:#999"><div style="font-size:28px;margin-bottom:8px">🏭</div>Chưa có sản lượng nào được ghi nhận trong ngày này.<br><span style="font-size:11px">Bấm <b>+ Ghi nhận sản lượng</b> để nhập.</span></td></tr>';renderSuaOk();return;}
   document.getElementById('sx-body').innerHTML=rows.map((r,i)=>'<tr>'
     +'<td class="tc">'+(i+1)+'</td>'
     +'<td class="tc" style="font-weight:700">'+r.time+'</td>'
     +'<td><div class="ma-code">'+r.ma+'</div></td>'
     +'<td class="item-ten">'+r.ten+'</td>'
     +'<td class="tr" style="font-weight:700;color:#185FA5;font-size:14px">+'+fN(r.sl)+'</td>'
+    +'<td class="tr" style="font-weight:700;color:#1e8449">'+fN(laySlOkCuaLuot(r))+'</td>'
+    +'<td class="tr" style="font-weight:700;color:#c0392b">'+fN(layNgCuaLuot(r))+'</td>'
     +'<td class="tc">'+r.dvt+'</td>'
     +'<td class="tc"><span style="background:#eef2f6;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+(LOC_LABELS[r.xuong]||'Xưởng 1')+'</span> <button onclick="editSxXuong(\''+r.id+'\')" style="background:none;border:none;cursor:pointer;color:#185FA5;font-size:12px;padding:0 2px" title="Sửa xưởng">✏</button></td>'
     +'<td class="tc">'+(r.nguoi||'<span style="color:#ccc">—</span>')+'</td>'
@@ -3114,6 +3172,68 @@ function renderDaySx(){
     +'<td style="color:#888;font-size:11px">'+(r.note||'')+'</td>'
     +'<td class="tc"><button onclick="delSx(\''+r.id+'\')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px" title="Xóa">🗑</button></td>'
     +'</tr>').join('');
+  renderSuaOk();
+}
+function renderSuaOk(){
+  const ds=fISO(curDateSx);
+  const rows=suaOkLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time));
+  const body=document.getElementById('suaok-body');if(!body)return;
+  if(!rows.length){body.innerHTML='<tr><td colspan="11" style="text-align:center;padding:20px;color:#999">Chưa có hàng sửa OK nào được ghi nhận trong ngày này.</td></tr>';return;}
+  body.innerHTML=rows.map((r,i)=>'<tr>'
+    +'<td class="tc">'+(i+1)+'</td>'
+    +'<td class="tc" style="font-weight:700">'+r.time+'</td>'
+    +'<td><div class="ma-code">'+r.ma+'</div></td>'
+    +'<td class="item-ten">'+r.ten+'</td>'
+    +'<td class="tr" style="font-weight:700;color:#1e8449;font-size:14px">+'+fN(r.sl)+'</td>'
+    +'<td class="tc">'+r.dvt+'</td>'
+    +'<td class="tc"><span style="background:#eef2f6;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+(LOC_LABELS[r.loc]||'Xưởng 1')+'</span></td>'
+    +'<td class="tc">'+(r.nguoi||'<span style="color:#ccc">—</span>')+'</td>'
+    +'<td class="tr" style="font-weight:600">'+fN(r.ton_sau)+' '+r.dvt+'</td>'
+    +'<td style="color:#888;font-size:11px">'+(r.note||'')+'</td>'
+    +'<td class="tc"><button onclick="delSuaOk(\''+r.id+'\')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px" title="Xóa">🗑</button></td>'
+    +'</tr>').join('');
+}
+function openSuaOkModal(){if(!requireAdmin())return;
+  if(!products.length){toast('Chưa có thành phẩm nào! Vào tab "Định Mức BOM" để khai báo trước.',true);return;}
+  const sel=document.getElementById('msok-ma');
+  sel.innerHTML='<option value="">-- Chọn thành phẩm --</option>'+products.map(p=>'<option value="'+p.ma+'">['+p.ma+'] '+p.ten+'</option>').join('');
+  document.getElementById('msok-sl').value=1;
+  document.getElementById('msok-xuong').value='x1';
+  document.getElementById('msok-nguoi').value='';
+  document.getElementById('msok-note').value='';
+  openModal('modal-suaok');
+  setTimeout(()=>sel.focus(),200);
+}
+function saveSuaOk(){if(!requireAdmin())return;
+  const ma=document.getElementById('msok-ma').value;
+  const sl=parseFloat(document.getElementById('msok-sl').value)||0;
+  const loc=document.getElementById('msok-xuong').value||'x1';
+  if(!ma){toast('Vui lòng chọn thành phẩm!',true);return;}
+  if(sl<=0){toast('Số lượng phải lớn hơn 0!',true);return;}
+  const p=products.find(x=>x.ma===ma);
+  if(!p){toast('Không tìm thấy thành phẩm!',true);return;}
+  const ngConLai=tongNGLuyKe();
+  if(sl>ngConLai){
+    if(!confirm('Tổng NG lũy kế hiện chỉ còn '+fN(ngConLai)+', nhập '+fN(sl)+' sẽ vượt số lượng NG đang chờ sửa.\nVẫn tiếp tục?'))return;
+  }
+  const nguoi=document.getElementById('msok-nguoi').value.trim();
+  const note=document.getElementById('msok-note').value.trim();
+  const now=new Date(),ds=fISO(curDateSx),gio=now.toTimeString().slice(0,5);
+  addTonSP(p,loc,sl);
+  suaOkLog.push({id:genId(),date:ds,time:gio,ma:p.ma,ten:p.ten,dvt:p.dvt,sl,loc,nguoi,note,ton_sau:getTonSP(p,loc)});
+  persist();
+  closeModal('modal-suaok');
+  renderDaySx();renderSP();updateSummary();
+  toast('🔧 Đã ghi nhận sửa OK '+fN(sl)+' '+p.dvt+' — '+p.ten+' (đã cộng vào tồn thành phẩm)');
+}
+function delSuaOk(id){if(!requireAdmin())return;
+  const r=suaOkLog.find(x=>x.id===id);if(!r)return;
+  if(!confirm('Xóa lượt sửa OK?\n'+r.ten+' — +'+fN(r.sl)+' '+r.dvt+'\n\nTồn thành phẩm sẽ được trừ lại tương ứng.'))return;
+  const p=products.find(x=>x.ma===r.ma);
+  if(p)addTonSP(p,r.loc||'x1',-r.sl);
+  suaOkLog=suaOkLog.filter(x=>x.id!==id);
+  persist();renderDaySx();renderSP();updateSummary();
+  toast('Đã xóa lượt sửa OK');
 }
 function editSxXuong(id){
   if(!requireAdmin())return;
@@ -3134,11 +3254,12 @@ function editSxXuong(id){
     g.loc=newLoc;
     if(g.from)g.from=g.from.replace(LOC_LABELS[oldLoc],LOC_LABELS[newLoc]);
   });
-  // Hoàn tác tồn thành phẩm ở xưởng cũ, cộng đúng vào xưởng mới
+  // Hoàn tác tồn thành phẩm ở xưởng cũ, cộng đúng vào xưởng mới (chỉ phần SL OK)
   const p=products.find(x=>x.ma===r.ma);
+  const slOk=laySlOkCuaLuot(r);
   if(p){
-    addTonSP(p,oldLoc,-r.sl);
-    addTonSP(p,newLoc,r.sl);
+    addTonSP(p,oldLoc,-slOk);
+    addTonSP(p,newLoc,slOk);
     r.ton_sau=getTonSP(p,newLoc);
   }
   r.xuong=newLoc;
@@ -3156,9 +3277,9 @@ function defectSummaryText(loi){
 }
 function delSx(id){if(!requireAdmin())return;
   const r=prodLog.find(x=>x.id===id);if(!r)return;
-  if(!confirm('Xóa lượt sản xuất?\n'+r.ten+' — +'+fN(r.sl)+' '+r.dvt+'\n\nLinh kiện đã tiêu hao sẽ được hoàn lại và tồn thành phẩm sẽ trừ tương ứng.'))return;
+  if(!confirm('Xóa lượt sản xuất?\n'+r.ten+' — +'+fN(r.sl)+' '+r.dvt+'\n\nLinh kiện đã tiêu hao sẽ được hoàn lại và tồn thành phẩm (phần SL OK) sẽ trừ tương ứng.'))return;
   const p=products.find(x=>x.ma===r.ma);
-  if(p)addTonSP(p,r.xuong||'x1',-r.sl);
+  if(p)addTonSP(p,r.xuong||'x1',-laySlOkCuaLuot(r));
   (r.consumedIds||[]).forEach(gid=>{
     const g=gdLog.find(x=>x.id===gid);
     if(g){const it=items.find(x=>x.ma===g.ma);if(it)addTon(it,g.loc||'x1',g.sl);}
@@ -3168,8 +3289,8 @@ function delSx(id){if(!requireAdmin())return;
   persist();renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();renderOrders();updateSummary();
   toast('Đã xóa lượt sản xuất và hoàn lại linh kiện');
 }
-function exportSxCSV(){const ds=fISO(curDateSx),r=[['Giờ','Mã TP','Tên thành phẩm','ĐVT','SL sản xuất','Xưởng SX','Người TH','Nhân sự sáng','Nhân sự chiều','Tồn TP sau','Lỗi phát sinh','Ghi chú']];prodLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>r.push([l.time,l.ma,l.ten,l.dvt,l.sl,LOC_LABELS[l.xuong]||'Xưởng 1',l.nguoi||'',l.nsSang||0,l.nsChieu||0,l.ton_sau,defectSummaryText(l.loi),l.note||'']));dlCSV(r,'sanluong-'+ds+'.csv');toast('Đã xuất CSV');}
-function exportSxPDF(){const ds=fISO(curDateSx);const rows=prodLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).map((l,i)=>'<tr><td>'+(i+1)+'</td><td>'+l.time+'</td><td style="font-size:9px">'+l.ma+'</td><td>'+l.ten+'</td><td>+'+fN(l.sl)+' '+l.dvt+'</td><td>'+(LOC_LABELS[l.xuong]||'Xưởng 1')+'</td><td>'+(l.nguoi||'—')+'</td><td>'+fN(l.nsSang||0)+' / '+fN(l.nsChieu||0)+'</td><td>'+fN(l.ton_sau)+'</td><td style="font-size:10px">'+(defectSummaryText(l.loi)||'—')+'</td><td>'+(l.note||'')+'</td></tr>').join('');openPDF(buildPDF('NHẬT KÝ SẢN LƯỢNG SẢN XUẤT — XƯỞNG HẢI TÂN 2','Ngày: '+ds,'<table><thead><tr><th>STT</th><th>Giờ</th><th>Mã TP</th><th>Tên</th><th>SL SX</th><th>Xưởng SX</th><th>Người TH</th><th>Nhân sự (S/C)</th><th>Tồn TP sau</th><th>Lỗi phát sinh</th><th>Ghi chú</th></tr></thead><tbody>'+rows+'</tbody></table>'));}
+function exportSxCSV(){const ds=fISO(curDateSx),r=[['Giờ','Mã TP','Tên thành phẩm','ĐVT','SL sản xuất','SL OK','SL NG','Xưởng SX','Người TH','Nhân sự sáng','Nhân sự chiều','Tồn TP sau','Lỗi phát sinh','Ghi chú']];prodLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>r.push([l.time,l.ma,l.ten,l.dvt,l.sl,laySlOkCuaLuot(l),layNgCuaLuot(l),LOC_LABELS[l.xuong]||'Xưởng 1',l.nguoi||'',l.nsSang||0,l.nsChieu||0,l.ton_sau,defectSummaryText(l.loi),l.note||'']));dlCSV(r,'sanluong-'+ds+'.csv');toast('Đã xuất CSV');}
+function exportSxPDF(){const ds=fISO(curDateSx);const rows=prodLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).map((l,i)=>'<tr><td>'+(i+1)+'</td><td>'+l.time+'</td><td style="font-size:9px">'+l.ma+'</td><td>'+l.ten+'</td><td>+'+fN(l.sl)+' '+l.dvt+'</td><td>'+fN(laySlOkCuaLuot(l))+'</td><td>'+fN(layNgCuaLuot(l))+'</td><td>'+(LOC_LABELS[l.xuong]||'Xưởng 1')+'</td><td>'+(l.nguoi||'—')+'</td><td>'+fN(l.nsSang||0)+' / '+fN(l.nsChieu||0)+'</td><td>'+fN(l.ton_sau)+'</td><td style="font-size:10px">'+(defectSummaryText(l.loi)||'—')+'</td><td>'+(l.note||'')+'</td></tr>').join('');openPDF(buildPDF('NHẬT KÝ SẢN LƯỢNG SẢN XUẤT — XƯỞNG HẢI TÂN 2','Ngày: '+ds,'<table><thead><tr><th>STT</th><th>Giờ</th><th>Mã TP</th><th>Tên</th><th>SL SX</th><th>SL OK</th><th>SL NG</th><th>Xưởng SX</th><th>Người TH</th><th>Nhân sự (S/C)</th><th>Tồn TP sau</th><th>Lỗi phát sinh</th><th>Ghi chú</th></tr></thead><tbody>'+rows+'</tbody></table>'));}
 
 // ── XUẤT HÀNG THÀNH PHẨM (trừ tồn thành phẩm tại line) ───────────────────────
 function chDayXh(d){curDateXh=new Date(curDateXh);curDateXh.setDate(curDateXh.getDate()+d);document.getElementById('disp-date-xh').textContent=fDate(curDateXh);renderDayXh();}
@@ -4500,14 +4621,19 @@ document.getElementById('cd-drop-zone') && document.getElementById('cd-drop-zone
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 function init(){
-  migratePKWData();
+  // Đã bỏ tính năng Công Đoạn SX (Ép-Phun-In) — không còn tự động thêm lại
+  // linh kiện đồ chơi mẫu (PKW4523/PKW4962) mỗi lần mở app nữa.
+  // Lưu ý: KHÔNG tự động chạy suaTramCanXuongSaiVeXuong2() ở đây nữa — vì
+  // trạm cân giờ để người dùng tự chọn Xưởng 1/2 (không còn mặc định sai cố
+  // định), nên Xưởng 1 có thể là lựa chọn ĐÚNG chứ không còn chắc chắn là lỗi.
+  // Dùng nút "🔧 Dọn dữ liệu trạm cân cũ" (tab Tồn Kho) để chạy 1 LẦN DUY NHẤT
+  // cho đúng giai đoạn còn lỗi mặc định trước đây, không tự chạy lại nữa.
   const now=new Date();
   document.getElementById('hd-date').textContent=now.toLocaleDateString('vi-VN');
   document.getElementById('disp-date').textContent=fDate(curDate);
   document.getElementById('disp-date-sx').textContent=fDate(curDateSx);
   document.getElementById('disp-date-xh').textContent=fDate(curDateXh);
   document.getElementById('disp-date-nktp').textContent=fDate(curDateNktp);
-  document.getElementById('disp-date-cd').textContent=fDate(curDateCd);
   document.getElementById('disp-date-cp').textContent=fDate(curDateCp);
   document.getElementById('disp-month-dt').textContent=fMonthLabel(curMonthDt);
   document.getElementById('rq-ngay').value=fISO(now);
@@ -4520,8 +4646,6 @@ function init(){
   renderOrders();
   renderTV();
   renderDayNktp();
-  renderCongDoanWip();
-  renderDayCongDoan();
   updateAdminUI();
   tryAutoLogin();
   initCloudSync();
