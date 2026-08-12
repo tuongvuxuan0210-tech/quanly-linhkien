@@ -2277,12 +2277,12 @@ function buildQtyTargetSVG(labels,actualArr,targetArr){
     +'</g></svg>';
 }
 function buildStaffSVG(labels,staffSangArr,staffChieuArr,staffTarget){
-  const W=Math.max(680,labels.length*44),H=280,padL=50,padR=16,padT=28,padB=56;
+  const W=Math.max(680,labels.length*54),H=280,padL=50,padR=16,padT=28,padB=56;
   const chartW=W-padL-padR,chartH=H-padT-padB;
   const niceMax=niceMaxOf([...(staffSangArr||[1]),...(staffChieuArr||[1]),staffTarget||1]);
   const n=labels.length||1;
-  const slotW=n>1?chartW/(n-1):chartW;
-  const xFor=i=>n>1?padL+slotW*i:padL+chartW/2;
+  const slotW=chartW/n;
+  const groupW=slotW*0.62,barW=groupW/2;
   const yFor=v=>padT+chartH-(niceMax?v/niceMax:0)*chartH;
   let grid='',steps=5;
   for(let s=0;s<=steps;s++){
@@ -2290,38 +2290,34 @@ function buildStaffSVG(labels,staffSangArr,staffChieuArr,staffTarget){
     grid+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#eee" stroke-width="1"/>'
       +'<text x="'+(padL-8)+'" y="'+(y+3)+'" font-size="9" fill="#999" text-anchor="end">'+fN(Math.round(val))+'</text>';
   }
-  function staffSeries(arr,color,darkColor,labelAbove){
-    let line='',dots='';
-    if(arr&&arr.some(v=>v>0)){
-      const pts=arr.map((v,i)=>xFor(i)+','+yFor(v)).join(' ');
-      line='<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2"/>';
-      arr.forEach((v,i)=>{
-        const x=xFor(i),y=yFor(v);
-        dots+='<circle cx="'+x+'" cy="'+y+'" r="3.5" fill="'+color+'"/>';
-        if(v>0)dots+='<text x="'+x+'" y="'+(labelAbove?y-8:y+16)+'" font-size="8" fill="'+darkColor+'" text-anchor="middle" font-weight="700">'+fN(v)+'</text>';
-      });
-    }
-    return line+dots;
-  }
-  const sangSVG=staffSeries(staffSangArr,'#e67e22','#a04000',true);
-  const chieuSVG=staffSeries(staffChieuArr,'#8e44ad','#6c3483',false);
+  let bars='';
+  labels.forEach((lb,i)=>{
+    const xGroup=padL+slotW*i+(slotW-groupW)/2;
+    const vSang=staffSangArr[i]||0,vChieu=staffChieuArr[i]||0;
+    const yS=yFor(vSang),hS=(padT+chartH)-yS;
+    const yC=yFor(vChieu),hC=(padT+chartH)-yC;
+    bars+='<rect x="'+xGroup+'" y="'+yS+'" width="'+barW+'" height="'+Math.max(0,hS)+'" rx="2" fill="#e67e22"/>';
+    if(vSang>0)bars+='<text x="'+(xGroup+barW/2)+'" y="'+(yS-4)+'" font-size="8" fill="#a04000" text-anchor="middle" font-weight="700">'+fN(vSang)+'</text>';
+    bars+='<rect x="'+(xGroup+barW)+'" y="'+yC+'" width="'+barW+'" height="'+Math.max(0,hC)+'" rx="2" fill="#8e44ad"/>';
+    if(vChieu>0)bars+='<text x="'+(xGroup+barW+barW/2)+'" y="'+(yC-4)+'" font-size="8" fill="#6c3483" text-anchor="middle" font-weight="700">'+fN(vChieu)+'</text>';
+  });
   const sty=yFor(staffTarget);
-  const staffTargetLine=staffTarget>0?('<line x1="'+padL+'" y1="'+sty+'" x2="'+(W-padR)+'" y2="'+sty+'" stroke="#8e44ad" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.7"/>'
-    +'<text x="'+(padL+4)+'" y="'+(sty-6)+'" font-size="9" fill="#6c3483" text-anchor="start" font-weight="700">Định mức NS: '+fN(staffTarget)+'</text>'):'';
+  const staffTargetLine=staffTarget>0?('<line x1="'+padL+'" y1="'+sty+'" x2="'+(W-padR)+'" y2="'+sty+'" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="5,4"/>'
+    +'<text x="'+(padL+4)+'" y="'+(sty-6)+'" font-size="9" fill="#c0392b" text-anchor="start" font-weight="700">Định mức NS: '+fN(staffTarget)+'</text>'):'';
   let xLabels='';
   labels.forEach((lb,i)=>{
-    const x=xFor(i),y=H-padB+14;
+    const x=padL+slotW*i+slotW/2,y=H-padB+14;
     xLabels+='<text x="'+x+'" y="'+y+'" font-size="9" fill="#666" text-anchor="end" transform="rotate(-40 '+x+' '+y+')">'+lb+'</text>';
   });
   return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+H+'px;display:block" xmlns="http://www.w3.org/2000/svg">'
     +'<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="transparent"/>'
-    +grid+staffTargetLine+sangSVG+chieuSVG+xLabels
+    +grid+bars+staffTargetLine+xLabels
     +'<line x1="'+padL+'" y1="'+padT+'" x2="'+padL+'" y2="'+(padT+chartH)+'" stroke="#ccc"/>'
     +'<line x1="'+padL+'" y1="'+(padT+chartH)+'" x2="'+(W-padR)+'" y2="'+(padT+chartH)+'" stroke="#ccc"/>'
     +'<g transform="translate('+(W-280)+',10)">'
-    +'<line x1="0" y1="5" x2="16" y2="5" stroke="#e67e22" stroke-width="2"/><circle cx="8" cy="5" r="2.5" fill="#e67e22"/><text x="20" y="9" font-size="9" fill="#555">NS Sáng</text>'
-    +'<line x1="90" y1="5" x2="106" y2="5" stroke="#8e44ad" stroke-width="2"/><circle cx="98" cy="5" r="2.5" fill="#8e44ad"/><text x="110" y="9" font-size="9" fill="#555">NS Chiều</text>'
-    +'<line x1="190" y1="5" x2="206" y2="5" stroke="#8e44ad" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.7"/><text x="210" y="9" font-size="9" fill="#555">Định mức NS</text>'
+    +'<rect x="0" y="0" width="10" height="10" fill="#e67e22"/><text x="14" y="9" font-size="9" fill="#555">NS Sáng</text>'
+    +'<rect x="90" y="0" width="10" height="10" fill="#8e44ad"/><text x="104" y="9" font-size="9" fill="#555">NS Chiều</text>'
+    +'<line x1="190" y1="5" x2="206" y2="5" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="5,4"/><text x="210" y="9" font-size="9" fill="#555">Định mức NS</text>'
     +'</g></svg>';
 }
 function buildDefectRateSVG(labels,rateArr){
