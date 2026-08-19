@@ -3996,12 +3996,12 @@ function renderCanHangPreview(){
   const autoCount=canHangBuf.filter(r=>r.auto).length;
   prev.innerHTML='<div style="padding:5px 0;font-size:11px;color:#666">Tìm thấy <b style="color:#1e8449">'+canHangBuf.length+'</b> dòng'
     +(autoCount?' — <b style="color:#185FA5">'+autoCount+'</b> dòng đã tự nhận xưởng từ file':'')
-    +(missCount?' — <b style="color:#c0392b">'+missCount+'</b> mã không có trong danh mục (sẽ bỏ qua)':'')+':</div>'
+    +(missCount?' — <b style="color:#185FA5">'+missCount+'</b> mã mới, chưa có trong danh mục (sẽ tự động thêm vào danh mục khi xác nhận)':'')+':</div>'
     +'<table style="width:100%;border-collapse:collapse;margin-top:4px"><thead><tr>'
     +['Mã hàng','Tên hàng','Tổng SL','Lượt','Xưởng nhận'].map(h=>'<th style="background:#c0392b;color:#fff;padding:4px 6px;font-size:10px;text-align:left">'+h+'</th>').join('')
     +'</tr></thead><tbody>'
     +canHangBuf.map((r,i)=>'<tr style="'+(!r.found?'opacity:.5':'')+'">'
-      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ma+(!r.found?' <span style="color:#c0392b">(không có)</span>':'')+'</td>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ma+(!r.found?' <span style="color:#185FA5">(mã mới)</span>':'')+'</td>'
       +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px">'+r.ten.slice(0,30)+'</td>'
       +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:right">'+fN(r.sl)+'</td>'
       +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-align:center">'+r.count+'</td>'
@@ -4009,27 +4009,31 @@ function renderCanHangPreview(){
         +(r.found?'<select class="cit" onchange="updCanHangXuong('+i+',this.value)"><option value="x1"'+(r.xuong==='x1'?' selected':'')+'>Xưởng 1</option><option value="x2"'+(r.xuong==='x2'?' selected':'')+'>Xưởng 2</option></select>'+(r.auto?' <span style="color:#185FA5;font-size:9px">(tự động)</span>':' <span style="color:#b7770d;font-size:9px">(chọn tay)</span>'):'—')
       +'</td></tr>').join('')
     +'</tbody></table>';
-  document.getElementById('btn-ok-canhang').style.display=foundCount?'inline-flex':'none';
+  document.getElementById('btn-ok-canhang').style.display=canHangBuf.length?'inline-flex':'none';
 }
 function updCanHangXuong(i,v){canHangBuf[i].xuong=v;}
 function confirmCanHang(){
   if(!requireAdmin())return;
   const now=new Date(),ds=fISO(now),time=now.toTimeString().slice(0,5);
-  let added=0,missed=0;
+  let added=0,created=0;
   canHangBuf.forEach(r=>{
-    const it=items.find(x=>x.ma===r.ma);
-    if(!r.found||!it){missed++;return;}
+    let it=items.find(x=>x.ma===r.ma);
+    if(!it){
+      it={ma:r.ma,ten:r.ten||r.ma,dvt:'',loai:'Khác',min:0,note:'Tự động tạo từ file Cần Hàng ngày '+ds+' — cần bổ sung ĐVT/Loại/Mức tồn tối thiểu',ton:{kt:0,x1:0,x2:0}};
+      items.push(it);
+      created++;
+    }
     migrateItemTon(it);
     const loc=r.xuong;
     it.ton[loc]=(it.ton[loc]||0)+r.sl;
     gdLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,type:'nhap',sl:r.sl,loc,from:'Cần Hàng ngày'+(r.orders.length?' — Đơn: '+r.orders.join(', '):''),nguoi:'',ton_sau:getTon(it,loc),note:'Nhập tự động từ file Cần Hàng ('+r.count+' lượt)'});
     added++;
   });
-  persist();closeModal('modal-canhang');renderTonKho();renderDayGd();updateSummary();
+  persist();closeModal('modal-canhang');renderTonKho();renderDayGd();updateSummary();renderDM();
   document.getElementById('canhang-preview').innerHTML='';
   document.getElementById('btn-ok-canhang').style.display='none';
   canHangBuf=[];
-  toast('Đã nhập '+added+' mã hàng từ file Cần Hàng'+(missed?', bỏ qua '+missed+' mã không có trong danh mục':''));
+  toast('Đã nhập '+added+' mã hàng từ file Cần Hàng'+(created?' (tự động thêm '+created+' mã mới vào danh mục — vào tab Danh Mục để bổ sung ĐVT/Loại/Mức tồn tối thiểu)':''));
 }
 document.getElementById('canhang-drop-zone') && document.getElementById('canhang-drop-zone').addEventListener('drop',function(e){
   e.preventDefault();const f=e.dataTransfer.files[0];if(f)processCanHangFile(f);
