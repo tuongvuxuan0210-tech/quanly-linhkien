@@ -275,7 +275,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
 <div class="modal-overlay" id="modal-canhang">
   <div class="modal-box" style="max-width:640px">
     <h3>Nhập Cần Hàng (nhật ký in tem) <button onclick="closeModal(&#39;modal-canhang&#39;)">✕</button></h3>
-    <div class="info-box">ℹ File Excel/CSV xuất từ trạm cân (cột: Ma hang, Ten hang, So luong, Nhập Xưởng...). Số lượng tự tách bỏ phần "(x tem)", Xưởng tự lấy từ cột "Nhập Xưởng" — các dòng cùng Mã hàng + Xưởng được <b>cộng dồn</b> thành 1 giao dịch nhập kho.</div>
+    <div class="info-box">ℹ File Excel/CSV xuất từ trạm cân (cột: Ma hang, Ten hang, So luong, Nhập Xưởng...). Số lượng tự tách bỏ phần "(x tem)", Xưởng tự lấy từ cột "Nhập Xưởng" — các dòng cùng Mã hàng + Xưởng được <b>cộng dồn</b> thành 1 giao dịch nhập kho. Dòng có cột "Loại hàng" = "Bán thành phẩm" sẽ <b>tự động bỏ qua</b>, không nhập vào kho linh kiện.</div>
     <div class="drop-zone" id="canhang-drop-zone" onclick="document.getElementById(&#39;canhang-file-in&#39;).click()">
       ⬆ Kéo thả file Cần Hàng (.xlsx, .csv) vào đây hoặc bấm để chọn file
     </div>
@@ -3962,17 +3962,25 @@ function processCanHangFile(file){
     reader.readAsText(file,'UTF-8');
   }
 }
+function isBanThanhPham(raw){
+  const s=String(raw||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/gi,'d').trim().toLowerCase();
+  return s==='ban thanh pham';
+}
+let canHangBtpSkipped=0;
 function buildCanHangFromRows(rows){
   if(!rows||rows.length<2){toast('File không hợp lệ!',true);return;}
   const hdr=rows[0].map(h=>String(h||'').trim().toLowerCase());
   const iMa=hdr.indexOf('ma hang'),iTen=hdr.indexOf('ten hang'),iSl=hdr.indexOf('so luong'),iDon=hdr.indexOf('so don hang');
   const iXu=hdr.findIndex(h=>h==='nhập xưởng'||h==='nhap xuong');
+  const iLh=hdr.findIndex(h=>h==='loai hang');
   if(iMa<0||iTen<0||iSl<0){toast('File thiếu cột "Ma hang", "Ten hang" hoặc "So luong"!',true);return;}
   const map={};
+  canHangBtpSkipped=0;
   for(let i=1;i<rows.length;i++){
     const c=rows[i];
     const ma=String(c[iMa]||'').trim();
     if(!ma)continue;
+    if(iLh>=0&&isBanThanhPham(c[iLh])){canHangBtpSkipped++;continue;}
     const ten=String(c[iTen]||'').trim();
     const sl=parseSoLuong(c[iSl]);
     const don=iDon>=0?String(c[iDon]||'').trim():'';
@@ -3996,7 +4004,8 @@ function renderCanHangPreview(){
   const autoCount=canHangBuf.filter(r=>r.auto).length;
   prev.innerHTML='<div style="padding:5px 0;font-size:11px;color:#666">Tìm thấy <b style="color:#1e8449">'+canHangBuf.length+'</b> dòng'
     +(autoCount?' — <b style="color:#185FA5">'+autoCount+'</b> dòng đã tự nhận xưởng từ file':'')
-    +(missCount?' — <b style="color:#185FA5">'+missCount+'</b> mã mới, chưa có trong danh mục (sẽ tự động thêm vào danh mục khi xác nhận)':'')+':</div>'
+    +(missCount?' — <b style="color:#185FA5">'+missCount+'</b> mã mới, chưa có trong danh mục (sẽ tự động thêm vào danh mục khi xác nhận)':'')
+    +(canHangBtpSkipped?' — <b style="color:#b7770d">'+canHangBtpSkipped+'</b> dòng "Bán thành phẩm" đã bỏ qua':'')+':</div>'
     +'<table style="width:100%;border-collapse:collapse;margin-top:4px"><thead><tr>'
     +['Mã hàng','Tên hàng','Tổng SL','Lượt','Xưởng nhận'].map(h=>'<th style="background:#c0392b;color:#fff;padding:4px 6px;font-size:10px;text-align:left">'+h+'</th>').join('')
     +'</tr></thead><tbody>'
@@ -4026,7 +4035,7 @@ function confirmCanHang(){
     migrateItemTon(it);
     const loc=r.xuong;
     it.ton[loc]=(it.ton[loc]||0)+r.sl;
-    gdLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,type:'nhap',sl:r.sl,loc,from:'Cần Hàng ngày'+(r.orders.length?' — Đơn: '+r.orders.join(', '):''),nguoi:'',ton_sau:getTon(it,loc),note:'Nhập tự động từ file Cần Hàng ('+r.count+' lượt)'});
+    gdLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,type:'nhap',sl:r.sl,loc,from:'Trạm cân — Cần Hàng ngày'+(r.orders.length?' — Đơn: '+r.orders.join(', '):''),nguoi:'',ton_sau:getTon(it,loc),note:'Nhập tự động từ file Cần Hàng ('+r.count+' lượt)'});
     added++;
   });
   persist();closeModal('modal-canhang');renderTonKho();renderDayGd();updateSummary();renderDM();
