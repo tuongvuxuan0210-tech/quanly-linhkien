@@ -506,6 +506,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
         <select id="mnktp-from" onchange="onPickNktp()">
           <option value="x1">Xưởng 1</option>
           <option value="x2">Xưởng 2</option>
+          <option value="gc">Gia công ngoài</option>
         </select>
       </div>
     </div>
@@ -515,6 +516,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
         <select id="mnktp-to" onchange="onPickNktp()">
           <option value="x2">Xưởng 2</option>
           <option value="x1">Xưởng 1</option>
+          <option value="gc">Gia công ngoài</option>
         </select>
       </div>
       <div class="ff"><label>Giờ thực hiện</label><input id="mnktp-time" type="time"></div>
@@ -639,7 +641,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <div class="chart-title">📦 Tồn thành phẩm — theo từng mã</div>
     <div class="tbl-wrap">
       <table><thead><tr>
-        <th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th><th>Tồn Xưởng 1</th><th>Tồn Xưởng 2</th><th>Tổng tồn</th>
+        <th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th><th>Tồn Xưởng 1</th><th>Tồn Xưởng 2</th><th>Tồn Gia công ngoài</th><th>Tổng tồn</th>
       </tr></thead><tbody id="tp-ton-body"></tbody></table>
     </div>
   </div>
@@ -752,7 +754,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <div class="tbl-wrap">
     <table><thead><tr>
       <th class="tl">Mã TP</th><th class="tl" style="min-width:150px">Tên thành phẩm</th>
-      <th>ĐVT</th><th>Tồn Xưởng 1</th><th>Tồn Xưởng 2</th><th>Tổng cộng</th>
+      <th>ĐVT</th><th>Tồn Xưởng 1</th><th>Tồn Xưởng 2</th><th>Tồn Gia công ngoài</th><th>Tổng cộng</th>
       <th>Mức tối thiểu</th><th>Trạng thái</th>
     </tr></thead>
     <tbody id="tk-tp-body"></tbody></table>
@@ -1863,7 +1865,7 @@ function fISO(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0
 function fDate(d){return d.toLocaleDateString('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});}
 function fN(n){return (n||0).toLocaleString('vi-VN');}
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
-const LOC_LABELS={kt:'Kho Tổng',x1:'Xưởng 1',x2:'Xưởng 2'};
+const LOC_LABELS={kt:'Kho Tổng',x1:'Xưởng 1',x2:'Xưởng 2',gc:'Gia công ngoài'};
 function migrateItemTon(it){
   if(typeof it.ton!=='object'||it.ton===null){
     it.ton={kt:(typeof it.ton==='number'?it.ton:0),x1:0,x2:0};
@@ -1879,14 +1881,14 @@ function addTon(it,loc,delta){migrateItemTon(it);it.ton[loc]=Math.max(0,(it.ton[
 function getSt(it){const t=getTon(it);return t<it.min?'low':t<=it.min*1.5?'warn':'ok';}
 function migrateProductTon(p){
   if(typeof p.ton!=='object'||p.ton===null){
-    p.ton={x1:(typeof p.ton==='number'?p.ton:0),x2:0};
+    p.ton={x1:(typeof p.ton==='number'?p.ton:0),x2:0,gc:0};
   } else {
-    p.ton.x1=p.ton.x1||0;p.ton.x2=p.ton.x2||0;
+    p.ton.x1=p.ton.x1||0;p.ton.x2=p.ton.x2||0;p.ton.gc=p.ton.gc||0;
   }
   return p;
 }
 function migrateAllProducts(arr){(arr||[]).forEach(migrateProductTon);return arr;}
-function getTonSP(p,loc){migrateProductTon(p);if(loc)return p.ton[loc]||0;return (p.ton.x1||0)+(p.ton.x2||0);}
+function getTonSP(p,loc){migrateProductTon(p);if(loc)return p.ton[loc]||0;return (p.ton.x1||0)+(p.ton.x2||0)+(p.ton.gc||0);}
 function setTonSP(p,loc,val){migrateProductTon(p);p.ton[loc]=Math.max(0,val);}
 function addTonSP(p,loc,delta){migrateProductTon(p);p.ton[loc]=Math.max(0,(p.ton[loc]||0)+delta);}
 function getStSP(p){const t=getTonSP(p),m=p.min||0;if(m<=0)return 'ok';return t<m?'low':t<=m*1.5?'warn':'ok';}
@@ -2133,11 +2135,12 @@ function renderTonKhoTP(){
       +'<td class="tc">'+p.dvt+'</td>'
       +'<td class="tr">'+fN(getTonSP(p,'x1'))+'</td>'
       +'<td class="tr">'+fN(getTonSP(p,'x2'))+'</td>'
+      +'<td class="tr" style="color:#b7770d">'+fN(getTonSP(p,'gc'))+'</td>'
       +'<td class="tr" style="font-weight:700;font-size:14px">'+fN(getTonSP(p))+'</td>'
       +'<td class="tr">'+fN(p.min||0)+'</td>'
       +'<td class="tc">'+stM[st]+'</td>'
       +'</tr>';
-  }).join('') : '<tr><td colspan="8" style="text-align:center;padding:20px;color:#999">Chưa có thành phẩm nào. Khai báo ở tab "Định Mức BOM".</td></tr>';
+  }).join('') : '<tr><td colspan="9" style="text-align:center;padding:20px;color:#999">Chưa có thành phẩm nào. Khai báo ở tab "Định Mức BOM".</td></tr>';
 }
 
 // ── SUMMARY ──────────────────────────────────────────────────────────────────
@@ -2366,14 +2369,15 @@ function updateSummary(){
   document.getElementById('s-tp-ton').textContent=fN(products.reduce((s,p)=>s+getTonSP(p),0));
   const tpTonBody=document.getElementById('tp-ton-body');
   if(tpTonBody){
-    const tpList=products.map(p=>({ma:p.ma,ten:p.ten,x1:getTonSP(p,'x1'),x2:getTonSP(p,'x2'),tong:getTonSP(p)})).filter(r=>r.tong>0).sort((a,b)=>b.tong-a.tong);
+    const tpList=products.map(p=>({ma:p.ma,ten:p.ten,x1:getTonSP(p,'x1'),x2:getTonSP(p,'x2'),gc:getTonSP(p,'gc'),tong:getTonSP(p)})).filter(r=>r.tong>0).sort((a,b)=>b.tong-a.tong);
     tpTonBody.innerHTML=tpList.length?tpList.map(r=>'<tr>'
       +'<td><div class="ma-code">'+r.ma+'</div></td>'
       +'<td class="item-ten">'+r.ten+'</td>'
       +'<td class="tr">'+fN(r.x1)+'</td>'
       +'<td class="tr">'+fN(r.x2)+'</td>'
+      +'<td class="tr" style="color:#b7770d">'+fN(r.gc)+'</td>'
       +'<td class="tr" style="font-weight:700;color:#185FA5">'+fN(r.tong)+'</td>'
-      +'</tr>').join('') : '<tr><td colspan="5" style="text-align:center;padding:16px;color:#999">Chưa có tồn thành phẩm nào.</td></tr>';
+      +'</tr>').join('') : '<tr><td colspan="6" style="text-align:center;padding:16px;color:#999">Chưa có tồn thành phẩm nào.</td></tr>';
   }
   document.getElementById('s-tp-sx').textContent=fN(prodLog.filter(l=>l.date===td).reduce((s,l)=>s+l.sl,0));
   document.getElementById('s-tp-xh').textContent=fN(shipLog.filter(l=>l.date===td).reduce((s,l)=>s+l.sl,0));
