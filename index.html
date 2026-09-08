@@ -588,7 +588,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <span style="font-size:18px">🚒</span>
   <h1>Quản Lý Linh Kiện Xe Cứu Hỏa — Xưởng Hải Tân 2</h1>
   <span class="tbadge" id="hd-date">21/7/2026</span>
-  <span class="tbadge" style="opacity:.75;font-size:10px" title="Ngày cập nhật code lần gần nhất — nếu số này không đổi sau khi bạn cập nhật GitHub, nghĩa là trình duyệt/Pages đang tải bản cache cũ">Build: 2026-09-07</span>
+  <span class="tbadge" style="opacity:.75;font-size:10px" title="Ngày cập nhật code lần gần nhất — nếu số này không đổi sau khi bạn cập nhật GitHub, nghĩa là trình duyệt/Pages đang tải bản cache cũ">Build: 2026-09-08</span>
   <span class="tbadge-warn" id="hd-low" style="display: inline;">⚠ 39 mặt hàng thiếu</span>
   <span class="tb-btn" id="hd-cloud" title="Trạng thái đồng bộ dữ liệu đám mây" style="background: rgba(231, 76, 60, 0.35);">⚠️ Mất kết nối (chỉ lưu máy này)</span>
   <span class="tb-btn" id="hd-update-btn" onclick="applyPendingCloudUpdate()" style="display:none;background:#2ecc71;animation:pulseUpdate 1.5s ease-in-out infinite" title="Có dữ liệu mới từ máy khác, bấm để cập nhật màn hình">🔄 Có dữ liệu mới — Bấm để cập nhật</span>
@@ -1722,6 +1722,134 @@ const FIREBASE_URL='https://tuongvx-data-default-rtdb.asia-southeast1.firebaseda
 const CLOUD_PATH='/data.json';
 let suppressCloudPush=false, lastAppliedTs=0, pushCloudTimer=null, esCloud=null, cloudReady=false, pendingPush=false;
 let applyStateTimer=null, pendingCloudData=null, lastToastTs=0;
+// TRUE trong suốt khoảng từ lúc bắt đầu 1 lượt ghi (persist()) cho tới khi ghi
+// XONG (thành công/thất bại hẳn) lên Firebase. Trong khoảng này, nếu nhận được
+// dữ liệu mới từ máy khác qua real-time, KHÔNG được tự áp dụng ngay (sẽ xóa mất
+// thay đổi cục bộ mình vừa làm nhưng chưa kịp gửi đi) — phải xếp hàng chờ.
+let dangGhiCucBo=false;
+let applyIncomingTimer=null;
+// Mốc dữ liệu "sạch" gần nhất — đúng bằng những gì mình biết chắc đang có trên
+// Firebase (sau lần đọc/ghi thành công gần nhất). Dùng làm điểm gốc để so sánh
+// "mình đã thay đổi những gì kể từ đó" khi cần TỰ ĐỘNG GỘP với người khác.
+let baselineState=null;
+function cloneDeep(o){return o==null?o:JSON.parse(JSON.stringify(o));}
+
+// ── GỘP TỰ ĐỘNG (rebase 3 chiều: gốc – của mình – mới nhất trên cloud) ───────
+// Ý tưởng: thay vì ghi đè cả khối dữ liệu, so sánh "gốc" (baselineState) với
+// "của mình" (live, đang có trong máy) để biết CHÍNH XÁC mình vừa thêm/sửa/xóa
+// gì, rồi áp đúng phần đó lên trên bản MỚI NHẤT của cloud (fresh) — y hệt cách
+// git rebase 1 nhánh lên nhánh chính. Nhờ vậy 2 người thao tác cùng lúc không
+// ai bị mất gì, và không ai phải tự làm lại thao tác của mình.
+const MANG_CO_ID=['gdLog','prodLog','shipLog','allocLog','tpTransferLog','congDoanLog','orders','returnLog'];
+
+function ganTheoId(mang){const m={};(mang||[]).forEach(x=>{if(x&&x.id!=null)m[x.id]=x;});return m;}
+function ganTheoMa(mang){const m={};(mang||[]).forEach(x=>{if(x&&x.ma!=null)m[x.ma]=x;});return m;}
+
+function gopMangCoId(baseArr,liveArr,freshArr){
+  const baseMap=ganTheoId(baseArr),liveMap=ganTheoId(liveArr),freshMap=ganTheoId(freshArr);
+  const ketQua=(freshArr||[]).map(x=>({...x})); // xuất phát từ bản MỚI NHẤT trên cloud — giữ nguyên phần người khác vừa thêm
+  // 1) Bản ghi mình THÊM MỚI (có ở live, không có ở base) mà fresh chưa có -> thêm vào
+  (liveArr||[]).forEach(x=>{
+    if(!x||x.id==null)return;
+    if(!(x.id in baseMap)&&!(x.id in freshMap))ketQua.push({...x});
+  });
+  // 2) Bản ghi mình ĐÃ XÓA (có ở base, không còn ở live) -> xóa khỏi kết quả nếu vẫn còn ở đó
+  (baseArr||[]).forEach(x=>{
+    if(!x||x.id==null)return;
+    if(!(x.id in liveMap)){
+      const i=ketQua.findIndex(k=>k&&k.id===x.id);
+      if(i>=0)ketQua.splice(i,1);
+    }
+  });
+  // 3) Bản ghi mình SỬA TẠI CHỖ (có ở cả base & live nhưng nội dung khác nhau,
+  // VD: thêm 1 lượt xuất trả vào 1 phiếu hàng trả về đã có) -> ghi đè đúng bản
+  // ghi đó bằng bản của mình, không đụng các bản ghi khác trong mảng.
+  (liveArr||[]).forEach(x=>{
+    if(!x||x.id==null)return;
+    const b=baseMap[x.id];
+    if(b&&JSON.stringify(b)!==JSON.stringify(x)){
+      const i=ketQua.findIndex(k=>k&&k.id===x.id);
+      if(i>=0)ketQua[i]={...x};else if(x.id in freshMap===false)ketQua.push({...x});
+    }
+  });
+  return ketQua;
+}
+
+function gopSoTheoBucket(baseObj,liveObj,freshObj,cacKhoa){
+  const ketQua={...(freshObj||{})};
+  cacKhoa.forEach(k=>{
+    const b=(baseObj&&baseObj[k])||0,l=(liveObj&&liveObj[k])||0,f=(freshObj&&freshObj[k])||0;
+    const delta=l-b; // đúng phần THAY ĐỔI cục bộ kể từ mốc gốc — cộng thêm vào bản mới nhất, không ghi đè tuyệt đối
+    ketQua[k]=delta!==0?Math.max(0,f+delta):f;
+  });
+  return ketQua;
+}
+
+function gopItemsHoacProducts(baseArr,liveArr,freshArr,laThanhPham){
+  const baseMap=ganTheoMa(baseArr),liveMap=ganTheoMa(liveArr);
+  const ketQua=(freshArr||[]).map(x=>({...x}));
+  const freshMap=ganTheoMa(ketQua);
+  (liveArr||[]).forEach(x=>{
+    if(!x||x.ma==null)return;
+    if(!(x.ma in baseMap)&&!(x.ma in freshMap))ketQua.push({...x});
+  });
+  (baseArr||[]).forEach(x=>{
+    if(!x||x.ma==null)return;
+    if(!(x.ma in liveMap)){
+      const i=ketQua.findIndex(k=>k&&k.ma===x.ma);
+      if(i>=0)ketQua.splice(i,1);
+    }
+  });
+  (liveArr||[]).forEach(x=>{
+    if(!x||x.ma==null)return;
+    const b=baseMap[x.ma];
+    if(!b)return; // đã xử lý ở nhánh "thêm mới" phía trên
+    const i=ketQua.findIndex(k=>k&&k.ma===x.ma);
+    if(i<0)return; // máy khác đã xóa mã này -> tôn trọng việc xóa, không tự thêm lại
+    const f=ketQua[i];
+    const merged={...f};
+    if(laThanhPham){
+      merged.ton=gopSoTheoBucket(b.ton,x.ton,f.ton,['x1','x2','gc']);
+    }else{
+      merged.ton=gopSoTheoBucket(b.ton,x.ton,f.ton,['kt','x1','x2','gc']);
+      if(x.wip||b.wip||f.wip)merged.wip=gopSoTheoBucket(b.wip,x.wip,f.wip,['ep','phun','in']);
+    }
+    ['ten','dvt','loai','min','note','congDoan','needPhun','needIn','cdInBaseline',
+     'bom','congdoan','xuong','gia'].forEach(f2=>{
+      if(JSON.stringify(x[f2])!==JSON.stringify(b[f2]))merged[f2]=x[f2];
+    });
+    ketQua[i]=merged;
+  });
+  return ketQua;
+}
+
+function gopTrangThai(base,live,fresh){
+  base=base||{};live=live||{};fresh=fresh||{};
+  const ketQua={...fresh};
+  ketQua.items=gopItemsHoacProducts(base.items,live.items,fresh.items,false);
+  ketQua.products=gopItemsHoacProducts(base.products,live.products,fresh.products,true);
+  MANG_CO_ID.forEach(k=>{ketQua[k]=gopMangCoId(base[k],live[k],fresh[k]);});
+  // defectCats: hợp theo tập hợp tên hạng mục lỗi (thêm mới cục bộ / xóa cục bộ)
+  const baseCatsSet=new Set(base.defectCats||[]),liveCatsSet=new Set(live.defectCats||[]);
+  let cats=(fresh.defectCats||[]).slice();
+  (live.defectCats||[]).forEach(c=>{if(!baseCatsSet.has(c)&&!cats.includes(c))cats.push(c);});
+  (base.defectCats||[]).forEach(c=>{if(!liveCatsSet.has(c)){const i=cats.indexOf(c);if(i>=0)cats.splice(i,1);}});
+  ketQua.defectCats=cats;
+  // planData: gộp theo từng NGÀY riêng biệt — chỉ ngày nào mình có sửa mới lấy bản của mình,
+  // các ngày khác giữ nguyên bản mới nhất trên cloud (kế hoạch của người khác không bị mất)
+  const planMerged={...(fresh.planData||{})};
+  Object.keys(live.planData||{}).forEach(ds=>{
+    const b=(base.planData||{})[ds],l=(live.planData||{})[ds];
+    if(JSON.stringify(b)!==JSON.stringify(l))planMerged[ds]=l;
+  });
+  ketQua.planData=planMerged;
+  // rqRows/rqCtr/staffLog: ít rủi ro tranh chấp thực tế (thường chỉ 1 người thao tác) — lấy bản
+  // cục bộ nếu có thay đổi so với gốc, ngược lại giữ nguyên bản mới nhất trên cloud
+  ketQua.rqRows=(JSON.stringify(live.rqRows)!==JSON.stringify(base.rqRows))?live.rqRows:fresh.rqRows;
+  ketQua.rqCtr=Math.max(fresh.rqCtr||1,live.rqCtr||1);
+  ketQua.staffLog=(JSON.stringify(live.staffLog)!==JSON.stringify(base.staffLog))?live.staffLog:fresh.staffLog;
+  return ketQua;
+}
 
 function setCloudStatus(state){
   // state: 'ok' | 'off' | 'connecting'
@@ -1735,24 +1863,90 @@ function collectState(){
   return {items,gdLog,rqRows,rqCtr,products,prodLog,shipLog,allocLog,defectCats,planData,orders,returnLog,staffLog,tpTransferLog,congDoanLog,_ts:Date.now()};
 }
 
+// Đọc dữ liệu THẬT MỚI NHẤT trên Firebase kèm ETag ngay trước khi ghi — không
+// dùng auth (đọc luôn được phép công khai), để luôn có mốc so sánh mới nhất,
+// tách biệt khỏi độ trễ (dù rất nhỏ) của kênh real-time EventSource.
+function taiTrangThaiMoiNhat(){
+  return fetch(FIREBASE_URL+CLOUD_PATH,{headers:{'X-Firebase-ETag':'true'}})
+    .then(r=>r.text().then(txt=>({txt,etag:r.headers.get('ETag'),ok:r.ok})))
+    .then(({txt,etag,ok})=>{
+      if(!ok)throw new Error('Không đọc được dữ liệu mới nhất');
+      let data=null;
+      try{data=txt&&txt!=='null'?JSON.parse(txt):null;}catch(e){data=null;}
+      return {data,etag};
+    });
+}
+
 function pushCloud(){
   if(!cloudReady){pendingPush=true;return;} // chưa nhận dữ liệu thật từ cloud → CHƯA đẩy gì lên, tránh ghi đè dữ liệu đúng bằng dữ liệu rỗng/mặc định
+  dangGhiCucBo=true;
   clearTimeout(pushCloudTimer);
-  pushCloudTimer=setTimeout(()=>{
-    const state=collectState();
-    const str=JSON.stringify(state);
-    lastAppliedTs=state._ts;
+  pushCloudTimer=setTimeout(()=>{thucHienGhiCoGop(0);},500);
+}
+
+// Đọc mới nhất (kèm ETag) → nếu cloud đã đổi khác so với mốc mình biết cuối
+// cùng thì TỰ ĐỘNG GỘP thay đổi cục bộ của mình lên trên bản mới nhất đó (rebase),
+// rồi ghi có điều kiện. Nếu vẫn bị từ chối do trùng khoảnh khắc (cực hiếm), thử
+// lại từ đầu (đọc-gộp-ghi) tối đa 6 lần — không bao giờ cần con người can thiệp.
+function thucHienGhiCoGop(lanThu){
+  const live=collectState();
+  taiTrangThaiMoiNhat().then(({data:fresh,etag})=>{
+    let ketQua,coGop=false;
+    if(fresh&&baselineState&&fresh._ts&&fresh._ts!==baselineState._ts){
+      ketQua=gopTrangThai(baselineState,live,fresh);
+      coGop=true;
+    }else{
+      ketQua=live;
+    }
+    ketQua._ts=Date.now();
     const url=FIREBASE_URL+CLOUD_PATH+(idToken?('?auth='+idToken):'');
-    fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:str})
+    const headers={'Content-Type':'application/json'};
+    if(etag)headers['if-match']=etag;
+    fetch(url,{method:'PUT',headers,body:JSON.stringify(ketQua)})
       .then(r=>{
-        if(r.ok){setCloudStatus('ok');}
-        else{
-          setCloudStatus('off');
+        if(r.ok){
+          apDungSauKhiGhiThanhCong(ketQua,coGop);
+        }else if(r.status===412&&lanThu<6){
+          // Đúng khoảnh khắc đọc xong-chưa kịp ghi thì có người khác chen vào ghi trước
+          // (cực hiếm) -> thử lại toàn bộ chu trình đọc-gộp-ghi, không mất gì cả.
+          setTimeout(()=>thucHienGhiCoGop(lanThu+1),300+lanThu*300);
+        }else{
+          dangGhiCucBo=false;setCloudStatus('off');
           if(r.status===401){toast('⚠ Phiên đăng nhập Admin đã hết hạn, vui lòng đăng nhập lại để tiếp tục lưu dữ liệu!',true);logoutAdmin();}
         }
       })
-      .catch(()=>setCloudStatus('off'));
-  },500);
+      .catch(()=>{
+        if(lanThu<6)setTimeout(()=>thucHienGhiCoGop(lanThu+1),800);
+        else{dangGhiCucBo=false;setCloudStatus('off');}
+      });
+  }).catch(()=>{
+    if(lanThu<6)setTimeout(()=>thucHienGhiCoGop(lanThu+1),800);
+    else{dangGhiCucBo=false;setCloudStatus('off');}
+  });
+}
+
+function apDungSauKhiGhiThanhCong(ketQua,coGop){
+  items=ketQua.items;migrateAllItems(items);
+  gdLog=ketQua.gdLog;rqRows=ketQua.rqRows;rqCtr=ketQua.rqCtr;
+  products=ketQua.products;migrateAllProducts(products);
+  prodLog=ketQua.prodLog;shipLog=ketQua.shipLog;allocLog=ketQua.allocLog;
+  defectCats=ketQua.defectCats;planData=ketQua.planData;orders=ketQua.orders;
+  returnLog=ketQua.returnLog;staffLog=ketQua.staffLog;
+  tpTransferLog=ketQua.tpTransferLog;congDoanLog=ketQua.congDoanLog;
+  baselineState=cloneDeep(ketQua);
+  lastAppliedTs=ketQua._ts;
+  suppressCloudPush=true;persist();suppressCloudPush=false;
+  dangGhiCucBo=false;
+  setCloudStatus('ok');
+  if(coGop){
+    // Lượt ghi này đã TỰ ĐỘNG GỘP thêm dữ liệu mới của máy khác — vẽ lại toàn bộ
+    // để phản ánh đầy đủ. Không ai mất gì, không ai cần làm lại thao tác nào.
+    updateSummary();renderDayGd();renderTonKho();renderDM();renderSP();renderDaySx();renderDoanhThu();renderDayXh();renderRq();renderHis();renderKhRows();renderKhShortage();renderDayCp();renderOrders();renderTV();renderDayNktp();renderCongDoanWip();renderDayCongDoan();
+    const nowTs=Date.now();
+    if(nowTs-lastToastTs>4000){lastToastTs=nowTs;toast('☁️ Đã tự động gộp với thao tác của máy khác — không có gì bị mất.');}
+  }
+  if(pendingCloudData){const d=pendingCloudData;pendingCloudData=null;applyCloudState(d);}
+  const btn=document.getElementById('hd-update-btn');if(btn)btn.style.display='none';
 }
 
 function applyCloudState(state){
@@ -1775,6 +1969,8 @@ function applyCloudState(state){
   staffLog=state.staffLog||staffLog;
   tpTransferLog=state.tpTransferLog||tpTransferLog;
   congDoanLog=state.congDoanLog||congDoanLog;
+  if(state._ts)lastAppliedTs=state._ts;
+  baselineState=cloneDeep(state);
   persist(); // chỉ lưu cache máy này, không đẩy ngược lên cloud (suppressCloudPush đang bật)
   suppressCloudPush=false;
   // Vẽ lại toàn bộ giao diện đang có để phản ánh dữ liệu mới nhất
@@ -1784,6 +1980,8 @@ function applyCloudState(state){
   // khi nhiều máy trong xưởng cùng lưu dữ liệu liên tiếp trong thời gian ngắn
   const nowTs=Date.now();
   if(nowTs-lastToastTs>4000){lastToastTs=nowTs;toast('☁️ Dữ liệu vừa được cập nhật từ máy khác');}
+  const btnHide=document.getElementById('hd-update-btn');
+  if(btnHide)btnHide.style.display='none';
 }
 
 let offStatusTimer=null;
@@ -1825,15 +2023,34 @@ function handleCloudEvent(ev){
     return;
   }
   pendingPush=false; // ưu tiên dữ liệu thật từ cloud thay vì thay đổi cục bộ trước khi kịp đồng bộ
-  lastAppliedTs=incomingTs;
-  // KHÔNG tự vẽ lại màn hình ngay — chỉ lưu dữ liệu chờ và hiện nút "Có dữ liệu mới".
-  // Người dùng chủ động bấm khi tiện, tránh bị nháy màn hình khi nhiều máy cùng lưu liên tục.
-  // Dữ liệu vẫn được lưu an toàn trên cloud dù chưa bấm cập nhật — không mất gì cả.
+
+  if(dangGhiCucBo){
+    // Máy này ĐANG có 1 lượt ghi của chính mình còn dang dở (đã bấm Lưu nhưng
+    // chưa gửi xong lên Firebase) — TUYỆT ĐỐI không áp dụng dữ liệu ngoài vào
+    // ngay lúc này, kẻo xóa mất đúng phần mình vừa thao tác. Xếp hàng chờ, sẽ
+    // tự áp dụng ngay khi lượt ghi của mình xong (xem trong pushCloud()). Hiện
+    // thêm nút thủ công làm phương án dự phòng, phòng khi lượt ghi cục bộ gặp
+    // sự cố và không tự áp dụng được.
+    pendingCloudData=data;
+    const btnDp=document.getElementById('hd-update-btn');
+    if(btnDp)btnDp.style.display='inline-flex';
+    return;
+  }
+  // KHÔNG có gì đang dở dang ở máy này → áp dụng NGAY LẬP TỨC, không chờ người
+  // dùng bấm nút nữa. Đây là điểm mấu chốt để tránh tình trạng 1 máy để màn
+  // hình mở từ lâu, số liệu cũ, rồi lỡ ghi đè mất dữ liệu người khác vừa thêm.
+  // Gộp nhẹ các sự kiện đến dồn dập (VD: nhiều máy cùng lưu liên tiếp) bằng 1
+  // debounce ngắn để đỡ phải vẽ lại giao diện nhiều lần liên tục.
   pendingCloudData=data;
-  const btn=document.getElementById('hd-update-btn');
-  if(btn)btn.style.display='inline-flex';
+  clearTimeout(applyIncomingTimer);
+  applyIncomingTimer=setTimeout(()=>{
+    if(dangGhiCucBo)return; // vừa có 1 lượt ghi cục bộ bắt đầu ngay trong lúc debounce — nhường cho nó xử lý trước
+    if(pendingCloudData){const d=pendingCloudData;pendingCloudData=null;applyCloudState(d);}
+  },250);
 }
 function applyPendingCloudUpdate(){
+  // Giữ lại hàm này để tương thích với nút "🔄 Có dữ liệu mới" cũ (giờ hiếm khi
+  // cần tới vì đã tự áp dụng, nhưng vẫn còn hữu ích khi đang có ghi dở dang).
   if(!pendingCloudData)return;
   applyCloudState(pendingCloudData);
   pendingCloudData=null;
@@ -4085,12 +4302,21 @@ document.getElementById('drop-zone') && document.getElementById('drop-zone').add
 
 // ── IMPORT CẦN HÀNG (nhật ký in tem từ trạm cân) ───────────────────────────────
 let canHangBuf=[];
-function splitCSVLine(line){
+function detectDelim(headerLine){
+  // Trạm cân xuất file .txt/.csv dùng Tab làm dấu phân cách; các nguồn khác dùng dấu phẩy.
+  // Tự nhận diện: đếm số Tab và số phẩy ở dòng tiêu đề, ai nhiều hơn thì dùng dấu đó.
+  const s=String(headerLine||'');
+  const tabCount=(s.match(/\t/g)||[]).length;
+  const commaCount=(s.match(/,/g)||[]).length;
+  return tabCount>commaCount?'\t':',';
+}
+function splitCSVLine(line,delim){
+  delim=delim||',';
   const out=[];let cur='',inQ=false;
   for(let i=0;i<line.length;i++){
     const c=line[i];
     if(c==='"'){ if(inQ && line[i+1]==='"'){cur+='"';i++;} else inQ=!inQ; }
-    else if(c===',' && !inQ){out.push(cur);cur='';}
+    else if(c===delim && !inQ){out.push(cur);cur='';}
     else cur+=c;
   }
   out.push(cur);
@@ -4109,6 +4335,29 @@ function mapXuong(raw){
   if(s==='2'||s==='x2'||s.includes('xưởng 2')||s.includes('xuong 2'))return 'x2';
   return null;
 }
+function readTextFileAutoEncoding(file,onText){
+  // File .txt/.csv xuất ra từ Excel ("Unicode Text") hoặc từ 1 số script Windows
+  // thường là UTF-16 (LE hoặc BE) kèm BOM 2 byte, KHÔNG phải UTF-8. Ép đọc bằng
+  // readAsText(file,'UTF-8') sẽ biến toàn bộ nội dung thành ký tự rác (mỗi ký tự
+  // xen lẫn byte 0x00), khiến so khớp tên cột luôn thất bại. Đọc dạng nhị phân rồi
+  // tự dò 2-3 byte đầu để chọn đúng bảng mã.
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const buf=new Uint8Array(e.target.result);
+    let text;
+    if(buf.length>=2 && buf[0]===0xFF && buf[1]===0xFE){
+      text=new TextDecoder('utf-16le').decode(buf.subarray(2));
+    }else if(buf.length>=2 && buf[0]===0xFE && buf[1]===0xFF){
+      text=new TextDecoder('utf-16be').decode(buf.subarray(2));
+    }else if(buf.length>=3 && buf[0]===0xEF && buf[1]===0xBB && buf[2]===0xBF){
+      text=new TextDecoder('utf-8').decode(buf.subarray(3));
+    }else{
+      text=new TextDecoder('utf-8').decode(buf);
+    }
+    onText(text);
+  };
+  reader.readAsArrayBuffer(file);
+}
 function handleCanHangFile(input){if(input.files[0])processCanHangFile(input.files[0]);}
 function processCanHangFile(file){
   const name=(file.name||'').toLowerCase();
@@ -4124,14 +4373,11 @@ function processCanHangFile(file){
     };
     reader.readAsArrayBuffer(file);
   }else{
-    const reader=new FileReader();
-    reader.onload=function(e){
-      let text=e.target.result;
-      if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+    readTextFileAutoEncoding(file,function(text){
       const lines=text.split(/\r?\n/).filter(l=>l.trim());
-      buildCanHangFromRows(lines.map(l=>splitCSVLine(l)));
-    };
-    reader.readAsText(file,'UTF-8');
+      const delim=detectDelim(lines[0]);
+      buildCanHangFromRows(lines.map(l=>splitCSVLine(l,delim)));
+    });
   }
 }
 function isBanThanhPham(raw){
@@ -4417,14 +4663,11 @@ function processCdFile(file){
     };
     reader.readAsArrayBuffer(file);
   }else{
-    const reader=new FileReader();
-    reader.onload=function(e){
-      let text=e.target.result;
-      if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+    readTextFileAutoEncoding(file,function(text){
       const lines=text.split(/\r?\n/).filter(l=>l.trim());
-      dispatchCdImport([lines.map(l=>splitCSVLine(l))]);
-    };
-    reader.readAsText(file,'UTF-8');
+      const delim=detectDelim(lines[0]);
+      dispatchCdImport([lines.map(l=>splitCSVLine(l,delim))]);
+    });
   }
 }
 // Phát hiện định dạng của 1 sheet: 'long' (Ma hang/So luong[/Cong doan] theo dòng) hay 'wide' (cột riêng Ép/Phun/In theo mã)
