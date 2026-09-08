@@ -1074,16 +1074,16 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <button class="btn btn-green" onclick="openAddOrderModal()">+ Thêm đơn hàng</button>
     <input id="dh-srch" placeholder="🔍 Tìm mã đơn hàng, mã TP, tên TP..." oninput="renderOrders()" style="margin-left:8px;flex:1;max-width:280px">
   </div>
-  <div class="info-box">ℹ Số lượng đã chạy = tổng sản lượng đã ghi nhận (tab Sản Lượng SX) cho đúng thành phẩm đó, được cộng dồn theo nguyên tắc <b>đơn hàng tạo trước được ưu tiên trước (FIFO)</b>. Nếu 1 thành phẩm có nhiều đơn hàng cùng lúc, sản lượng sẽ lấp đầy đơn cũ nhất trước rồi mới sang đơn tiếp theo.</div>
+  <div class="info-box">ℹ Số lượng đã giao = tổng đã <b>xuất hàng thực tế</b> (tab Xuất Hàng TP) cho đúng thành phẩm đó, được cộng dồn theo nguyên tắc <b>đơn hàng tạo trước được ưu tiên trước (FIFO)</b>. Nếu 1 thành phẩm có nhiều đơn hàng cùng lúc, hàng xuất sẽ lấp đầy đơn cũ nhất trước rồi mới sang đơn tiếp theo.</div>
   <div class="cards4">
     <div class="card"><div class="card-label">Tổng đơn hàng</div><div class="card-val" id="dh-total">0</div></div>
-    <div class="card"><div class="card-label">Đang chạy</div><div class="card-val ca" id="dh-running">0</div></div>
+    <div class="card"><div class="card-label">Đang giao</div><div class="card-val ca" id="dh-running">0</div></div>
     <div class="card"><div class="card-label">Hoàn thành</div><div class="card-val cg" id="dh-done">0</div></div>
     <div class="card"><div class="card-label">Tổng SL còn thiếu</div><div class="card-val cr" id="dh-remain">0</div></div>
   </div>
   <div class="tbl-wrap">
     <table><thead><tr>
-      <th style="width:40px">STT</th><th class="tl">Mã đơn hàng</th><th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th><th>SL đặt</th><th>SL đã chạy</th><th>Còn lại</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th>
+      <th style="width:40px">STT</th><th class="tl">Mã đơn hàng</th><th class="tl">Mã TP</th><th class="tl">Tên thành phẩm</th><th>SL đặt</th><th>SL đã giao</th><th>Còn lại</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th>
     </tr></thead><tbody id="dh-body"><tr><td colspan="10" style="text-align:center;padding:24px;color:#999">Chưa có đơn hàng nào.</td></tr></tbody></table>
   </div>
 </div>
@@ -3301,16 +3301,17 @@ function delOrder(id){if(!requireAdmin())return;
 function renderOrders(){
   const bodyEl=document.getElementById('dh-body');if(!bodyEl)return;
   const q=(document.getElementById('dh-srch')?.value||'').toLowerCase();
-  // Tổng sản lượng đã sản xuất theo từng mã TP (toàn bộ lịch sử)
-  const producedByMa={};
-  prodLog.forEach(l=>{producedByMa[l.ma]=(producedByMa[l.ma]||0)+l.sl;});
+  // Tổng đã XUẤT HÀNG (giao thật cho khách) theo từng mã TP (toàn bộ lịch sử) — không
+  // tính theo sản lượng sản xuất, vì sản xuất xong chưa chắc đã giao cho đúng đơn nào.
+  const daGiaoTheoMa={};
+  shipLog.forEach(l=>{daGiaoTheoMa[l.ma]=(daGiaoTheoMa[l.ma]||0)+l.sl;});
   // Phân bổ FIFO: nhóm đơn hàng theo mã TP, sắp theo ngày tạo (cũ nhất trước)
   const byMa={};
   orders.forEach(o=>{(byMa[o.ma]=byMa[o.ma]||[]).push(o);});
   const progress={}; // id -> {daChay, conLai, trangThai}
   Object.keys(byMa).forEach(ma=>{
     const list=[...byMa[ma]].sort((a,b)=>(a.created||'').localeCompare(b.created||'')||a.id.localeCompare(b.id));
-    let pool=producedByMa[ma]||0;
+    let pool=daGiaoTheoMa[ma]||0;
     list.forEach(o=>{
       const daChay=Math.min(o.sl,pool);
       pool-=daChay;
@@ -3318,7 +3319,7 @@ function renderOrders(){
       progress[o.id]={daChay,conLai,trangThai:conLai<=0?'done':(daChay>0?'running':'none')};
     });
   });
-  const stM={done:'<span class="sb sb-green">Hoàn thành</span>',running:'<span class="sb sb-amber">Đang chạy</span>',none:'<span class="sb sb-red">Chưa chạy</span>'};
+  const stM={done:'<span class="sb sb-green">Hoàn thành</span>',running:'<span class="sb sb-amber">Đang giao</span>',none:'<span class="sb sb-red">Chưa giao</span>'};
   const rows=orders.filter(o=>!q||(o.po+o.ma+o.ten).toLowerCase().includes(q));
   bodyEl.innerHTML=rows.length?rows.map((o,i)=>{
     const pr=progress[o.id]||{daChay:0,conLai:o.sl,trangThai:'none'};
