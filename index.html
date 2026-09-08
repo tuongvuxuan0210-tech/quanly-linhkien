@@ -2461,10 +2461,11 @@ function buildRevenuePctSVG(labels,pctArr){
     +'<rect x="0" y="0" width="10" height="10" fill="#16a08555" stroke="#16a085"/><text x="14" y="9" font-size="9" fill="#555">Tỷ lệ đạt doanh thu kế hoạch (%)</text>'
     +'</g></svg>';
 }
-function buildQtyTargetSVG(labels,actualArr,target){
+function buildQtyTargetSVG(labels,actualArr,targetArr){
   const W=Math.max(680,labels.length*44),H=300,padL=50,padR=16,padT=28,padB=56;
   const chartW=W-padL-padR,chartH=H-padT-padB;
-  const niceMax=niceMaxOf([...actualArr,target]);
+  const validTargets=targetArr.filter(v=>v!==null&&v!==undefined);
+  const niceMax=niceMaxOf([...actualArr,...validTargets,1]);
   const n=labels.length||1;
   const slotW=chartW/n,bw=slotW*0.5;
   const xFor=i=>padL+slotW*i+(slotW-bw)/2;
@@ -2481,9 +2482,22 @@ function buildQtyTargetSVG(labels,actualArr,target){
     bars+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+Math.max(0,h)+'" rx="2" fill="#185FA5"/>';
     if(v>0)bars+='<text x="'+(x+bw/2)+'" y="'+(y-4)+'" font-size="8" fill="#0e4278" text-anchor="middle" font-weight="700">'+fN(v)+'</text>';
   });
-  const ty=yFor(target);
-  const targetLine='<line x1="'+padL+'" y1="'+ty+'" x2="'+(W-padR)+'" y2="'+ty+'" stroke="#e74c3c" stroke-width="2" stroke-dasharray="6,4"/>'
-    +'<text x="'+(W-padR-4)+'" y="'+(ty-6)+'" font-size="9" fill="#c0392b" text-anchor="end" font-weight="700">Mục tiêu: '+fN(target)+'</text>';
+  // Mục tiêu SL lấy đúng theo từng ngày từ Kế Hoạch SX (tổng SL dự kiến các mã TP
+  // trong ngày đó) — vẽ dạng bậc thang riêng cho từng ngày, ngày nào chưa có kế
+  // hoạch thì không vẽ đường (để trống, không giả định số nào cả).
+  let targetLine='';
+  labels.forEach((lb,i)=>{
+    const t=targetArr[i];
+    const segX1=padL+slotW*i,segX2=padL+slotW*(i+1);
+    if(t===null||t===undefined){
+      const y0=padT+chartH;
+      targetLine+='<text x="'+((segX1+segX2)/2)+'" y="'+(y0-4)+'" font-size="8" fill="#bbb" text-anchor="middle">chưa có KH</text>';
+      return;
+    }
+    const ty=yFor(t);
+    targetLine+='<line x1="'+segX1+'" y1="'+ty+'" x2="'+segX2+'" y2="'+ty+'" stroke="#e74c3c" stroke-width="2" stroke-dasharray="6,4"/>'
+      +'<text x="'+((segX1+segX2)/2)+'" y="'+(ty-6)+'" font-size="8" fill="#c0392b" text-anchor="middle" font-weight="700">'+fN(t)+'</text>';
+  });
   let xLabels='';
   labels.forEach((lb,i)=>{
     const x=xFor(i)+bw/2,y=H-padB+14;
@@ -2592,15 +2606,19 @@ function renderOverviewCharts(){
     const p=products.find(x=>x.ma===r.ma);return s+(r.sl||0)*(p?(p.gia||0):0);
   },0));
   const actualQty=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>s+l.sl,0));
+  const planQty=daysInRange.map(ds=>{
+    const rows=planData[ds]||[];
+    if(!rows.length)return null; // ngày chưa nhập kế hoạch nào -> không có mục tiêu để hiện
+    return rows.reduce((s,r)=>s+(r.sl||0),0);
+  });
   const ngQty=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>s+layNgCuaLuot(l),0));
   const staffSang=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>s+(l.nsSang||0),0));
   const staffChieu=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>s+(l.nsChieu||0),0));
-  const QTY_TARGET=2500;
   const STAFF_TARGET=25;
   const pctArr=daysInRange.map((ds,i)=>planRevenue[i]>0?Math.round((actualRevenue[i]/planRevenue[i])*1000)/10:null);
   const defectRateArr=daysInRange.map((ds,i)=>actualQty[i]>0?Math.round((ngQty[i]/actualQty[i])*1000)/10:null);
   revEl.innerHTML=buildRevenuePctSVG(labels,pctArr);
-  qtyEl.innerHTML=buildQtyTargetSVG(labels,actualQty,QTY_TARGET);
+  qtyEl.innerHTML=buildQtyTargetSVG(labels,actualQty,planQty);
   staffEl.innerHTML=buildStaffSVG(labels,staffSang,staffChieu,STAFF_TARGET);
   if(defectEl)defectEl.innerHTML=buildDefectRateSVG(labels,defectRateArr);
 }
