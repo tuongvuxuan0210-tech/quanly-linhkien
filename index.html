@@ -3101,6 +3101,59 @@ function copyBomFrom(){
     if(confirm('Thành phẩm hiện tại đã có '+editBomRows.length+' dòng định mức.\nSao chép sẽ THAY THẾ toàn bộ các dòng đang có bằng định mức của "'+src.ten+'".\n\nBạn có chắc chắn muốn tiếp tục?'))doCopy();
   } else doCopy();
 }
+function tinhChenhLechBOM(bomCu,bomMoi){
+  const cuMap={};(bomCu||[]).forEach(b=>{cuMap[b.ma]=b.sl;});
+  const ketQua=[];
+  (bomMoi||[]).forEach(b=>{
+    const slCu=cuMap[b.ma]||0;
+    const delta=b.sl-slCu;
+    if(delta!==0)ketQua.push({ma:b.ma,slCu,slMoi:b.sl,delta});
+  });
+  return ketQua;
+}
+
+// Khi BOM của 1 thành phẩm ĐÃ TỪNG được sản xuất bị thêm/sửa định mức, phần
+// chênh lệch đó chưa hề được trừ/hoàn cho số đã sản xuất trước đây (lúc sản
+// xuất, hệ thống chỉ trừ đúng theo BOM tại THỜI ĐIỂM đó). Hàm này tính đúng số
+// cần bù trừ (tách riêng theo từng xưởng, dựa theo sản lượng thật đã ghi nhận
+// ở tab Sản Lượng SX), hỏi xác nhận, rồi áp dụng ngay vào tồn linh kiện kèm
+// dòng lịch sử rõ ràng. Trả về false nếu người dùng hủy xác nhận (không lưu gì).
+function xacNhanBuTruBOM(maTP,diff){
+  const daSanXuat={x1:0,x2:0};
+  prodLog.filter(l=>l.ma===maTP).forEach(l=>{const loc=l.xuong||'x1';daSanXuat[loc]=(daSanXuat[loc]||0)+l.sl;});
+  const tongDaSX=daSanXuat.x1+daSanXuat.x2;
+  if(tongDaSX<=0)return true; // chưa từng sản xuất -> không có gì để bù trừ
+
+  const dsCanBuTru=[];
+  diff.forEach(d=>{
+    const it=items.find(x=>x.ma===d.ma);
+    ['x1','x2'].forEach(loc=>{
+      const sl=daSanXuat[loc];
+      if(!sl)return;
+      const canBuTru=d.delta*sl; // dương = cần trừ thêm, âm = hoàn lại
+      if(canBuTru!==0)dsCanBuTru.push({ma:d.ma,ten:it?it.ten:d.ma,dvt:it?it.dvt:'',loc,canBuTru,slCu:d.slCu,slMoi:d.slMoi,daSanXuatXuong:sl});
+    });
+  });
+  if(!dsCanBuTru.length)return true;
+
+  const dong=dsCanBuTru.map(x=>'- '+x.ten+' ('+x.ma+') tại '+LOC_LABELS[x.loc]+': định mức '+x.slCu+' → '+x.slMoi+'/1, đã sản xuất '+fN(x.daSanXuatXuong)+' → '+(x.canBuTru>0?'TRỪ THÊM ':'HOÀN LẠI ')+fN(Math.abs(x.canBuTru))+' '+x.dvt).join('\n');
+  const dongY=confirm('Thành phẩm này đã sản xuất tổng cộng '+fN(tongDaSX)+' — định mức BOM vừa thay đổi sẽ được BÙ TRỪ NGAY vào tồn linh kiện cho đúng số đã sản xuất trước đó:\n\n'+dong+'\n\nBạn có chắc chắn muốn áp dụng bù trừ này không?\n(Nếu bấm Hủy, các thay đổi BOM cũng sẽ KHÔNG được lưu — bạn có thể sửa lại định mức trước khi lưu lại.)');
+  if(!dongY)return false;
+
+  const now=new Date(),ds=fISO(now),time=now.toTimeString().slice(0,5);
+  dsCanBuTru.forEach(x=>{
+    const it=items.find(k=>k.ma===x.ma);
+    if(!it)return;
+    addTon(it,x.loc,-x.canBuTru);
+    gdLog.push({id:genId(),date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,
+      type:x.canBuTru>0?'xuat':'nhap',sl:Math.abs(x.canBuTru),loc:x.loc,
+      from:'Bù trừ hồi tố — cập nhật định mức BOM '+maTP,nguoi:'',
+      ton_sau:getTon(it,x.loc),
+      note:'Định mức đổi từ '+x.slCu+' → '+x.slMoi+'/1, áp dụng cho '+fN(x.daSanXuatXuong)+' sản phẩm đã sản xuất trước đó tại '+LOC_LABELS[x.loc]});
+  });
+  return true;
+}
+
 function saveProduct(){if(!requireAdmin())return;
   const ma=(document.getElementById('fp-ma').value||'').trim();
   const ten=(document.getElementById('fp-ten').value||'').trim();
@@ -3115,17 +3168,24 @@ function saveProduct(){if(!requireAdmin())return;
   const congdoan=(document.getElementById('fp-congdoan').value||'').trim();
   const note=document.getElementById('fp-note').value||'';
   const xuong=document.getElementById('fp-xuong').value||'x1';
-  const bom=editBomRows.filter(r=>r.ma&&r.sl>0);
+  const bomMoi=editBomRows.filter(r=>r.ma&&r.sl>0);
   if(editPMa){
     const p=products.find(x=>x.ma===editPMa);
-    if(p){p.ten=ten;p.dvt=dvt;p.ton={x1:tonX1,x2:tonX2};p.min=min;p.gia=gia;p.congdoan=congdoan;p.note=note;p.bom=bom;p.xuong=xuong;}
+    if(p){
+      const diff=tinhChenhLechBOM(p.bom||[],bomMoi);
+      if(diff.length){
+        const okDay=xacNhanBuTruBOM(editPMa,diff);
+        if(!okDay)return; // người dùng hủy xác nhận bù trừ -> dừng lại, KHÔNG lưu gì cả
+      }
+      p.ten=ten;p.dvt=dvt;p.ton={x1:tonX1,x2:tonX2,gc:(p.ton&&p.ton.gc)||0};p.min=min;p.gia=gia;p.congdoan=congdoan;p.note=note;p.bom=bomMoi;p.xuong=xuong;
+    }
     toast('Đã cập nhật thành phẩm: '+ten);
   } else {
     if(products.find(p=>p.ma===ma)){toast('Mã "'+ma+'" đã tồn tại!',true);return;}
-    products.push({ma,ten,dvt,ton:{x1:tonX1,x2:tonX2},min,gia,congdoan,note,bom,xuong});
+    products.push({ma,ten,dvt,ton:{x1:tonX1,x2:tonX2,gc:0},min,gia,congdoan,note,bom:bomMoi,xuong});
     toast('Đã thêm thành phẩm: '+ten);
   }
-  persist();closeModal('modal-product');renderSP();updateSummary();
+  persist();closeModal('modal-product');renderSP();updateSummary();renderTonKho();
 }
 function delProduct(ma){if(!requireAdmin())return;
   const p=products.find(x=>x.ma===ma);
