@@ -1074,7 +1074,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <button class="btn btn-green" onclick="openAddOrderModal()">+ Thêm đơn hàng</button>
     <input id="dh-srch" placeholder="🔍 Tìm mã đơn hàng, mã TP, tên TP..." oninput="renderOrders()" style="margin-left:8px;flex:1;max-width:280px">
   </div>
-  <div class="info-box">ℹ Số lượng đã giao = tổng đã <b>xuất hàng thực tế</b> (tab Xuất Hàng TP) cho đúng thành phẩm đó, được cộng dồn theo nguyên tắc <b>đơn hàng tạo trước được ưu tiên trước (FIFO)</b>. Nếu 1 thành phẩm có nhiều đơn hàng cùng lúc, hàng xuất sẽ lấp đầy đơn cũ nhất trước rồi mới sang đơn tiếp theo.</div>
+  <div class="info-box">ℹ Số lượng đã giao = tổng đã <b>xuất hàng thực tế</b> (tab Xuất Hàng TP), <b>trừ đi phần hàng bị khách trả về mà CHƯA xuất trả lại</b> (tab Hàng Trả Về — coi như chưa giao xong cho tới khi sửa xong và xuất trả), cộng dồn theo nguyên tắc <b>đơn hàng tạo trước được ưu tiên trước (FIFO)</b>. Nếu 1 thành phẩm có nhiều đơn hàng cùng lúc, hàng xuất sẽ lấp đầy đơn cũ nhất trước rồi mới sang đơn tiếp theo.</div>
   <div class="cards4">
     <div class="card"><div class="card-label">Tổng đơn hàng</div><div class="card-val" id="dh-total">0</div></div>
     <div class="card"><div class="card-label">Đang giao</div><div class="card-val ca" id="dh-running">0</div></div>
@@ -3305,13 +3305,22 @@ function renderOrders(){
   // tính theo sản lượng sản xuất, vì sản xuất xong chưa chắc đã giao cho đúng đơn nào.
   const daGiaoTheoMa={};
   shipLog.forEach(l=>{daGiaoTheoMa[l.ma]=(daGiaoTheoMa[l.ma]||0)+l.sl;});
+  // Hàng bị khách TRẢ VỀ mà CHƯA xuất trả lại (đang sửa/chờ xử lý) coi như CHƯA thực
+  // sự giao xong — trừ ngược lại khỏi "đã giao" để đơn hàng hiện đúng phần còn thiếu
+  // thật sự. Khi nào xuất trả lại xong (tvConLai giảm về 0), "đã giao" sẽ tự động
+  // tăng trở lại đúng số đó mà không cần chỉnh sửa gì thêm.
+  returnLog.forEach(r=>{
+    migrateReturnItem(r);
+    const conLai=tvConLai(r);
+    if(conLai>0)daGiaoTheoMa[r.ma]=(daGiaoTheoMa[r.ma]||0)-conLai;
+  });
   // Phân bổ FIFO: nhóm đơn hàng theo mã TP, sắp theo ngày tạo (cũ nhất trước)
   const byMa={};
   orders.forEach(o=>{(byMa[o.ma]=byMa[o.ma]||[]).push(o);});
   const progress={}; // id -> {daChay, conLai, trangThai}
   Object.keys(byMa).forEach(ma=>{
     const list=[...byMa[ma]].sort((a,b)=>(a.created||'').localeCompare(b.created||'')||a.id.localeCompare(b.id));
-    let pool=daGiaoTheoMa[ma]||0;
+    let pool=Math.max(0,daGiaoTheoMa[ma]||0);
     list.forEach(o=>{
       const daChay=Math.min(o.sl,pool);
       pool-=daChay;
@@ -3888,7 +3897,7 @@ function saveTv(){if(!requireAdmin())return;
   if(!lydo){toast('Vui lòng nhập lỗi / lý do trả về!',true);return;}
   const p=products.find(x=>x.ma===ma);
   returnLog.push({id:genId(),ma,ten:p?p.ten:ma,dvt:p?p.dvt:'',sl,ngayNhan:ngay,khachHang:kh,lyDo:lydo,nguoiNhan:nguoinhan,note,xuatTraLog:[]});
-  persist();closeModal('modal-tv');renderTV();updateSummary();
+  persist();closeModal('modal-tv');renderTV();updateSummary();renderOrders();
   toast('✅ Đã ghi nhận hàng trả về — '+fN(sl)+' '+(p?p.dvt:'')+' '+(p?p.ten:ma));
 }
 // Chuyển dữ liệu cũ (1 lần xuất/status) sang dạng nhiều lượt xuất trả từng phần
@@ -3959,7 +3968,7 @@ function addTvXuat(){if(!requireAdmin())return;
     if(!confirm('Còn lại chỉ '+fN(conLai)+' '+r.dvt+', xuất '+fN(sl)+' sẽ vượt số lượng đã nhận về.\nVẫn tiếp tục?'))return;
   }
   r.xuatTraLog.push({id:genId(),ngay,sl,nguoi,note});
-  persist();renderTvXuatModal();renderTV();updateSummary();
+  persist();renderTvXuatModal();renderTV();updateSummary();renderOrders();
   document.getElementById('mtvx-sl').value=Math.max(1,tvConLai(r));
   document.getElementById('mtvx-nguoi').value='';
   document.getElementById('mtvx-note').value='';
@@ -3969,14 +3978,14 @@ function delTvXuat(xid){if(!requireAdmin())return;
   const r=returnLog.find(x=>(x.xuatTraLog||[]).some(e=>e.id===xid));if(!r)return;
   if(!confirm('Xóa lượt xuất trả này?'))return;
   r.xuatTraLog=r.xuatTraLog.filter(e=>e.id!==xid);
-  persist();renderTvXuatModal();renderTV();updateSummary();
+  persist();renderTvXuatModal();renderTV();updateSummary();renderOrders();
   toast('Đã xóa lượt xuất trả');
 }
 function delTv(id){if(!requireAdmin())return;
   const r=returnLog.find(x=>x.id===id);if(!r)return;
   if(!confirm('Xóa bản ghi hàng trả về?\n'+r.ten+' — '+fN(r.sl)+' '+r.dvt+' (KH: '+(r.khachHang||'—')+')\n\nSẽ xóa luôn toàn bộ lịch sử xuất trả của bản ghi này (nếu có).'))return;
   returnLog=returnLog.filter(x=>x.id!==id);
-  persist();renderTV();updateSummary();
+  persist();renderTV();updateSummary();renderOrders();
   toast('Đã xóa bản ghi hàng trả về');
 }
 function tvStatusBadge(st){
