@@ -1124,8 +1124,20 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
       <span style="color:#555">Lượt ghi: <span id="xh-day-count" style="font-weight:700">0</span></span>
     </div>
     <button class="btn btn-amber" onclick="openXhModal()" style="margin-left:auto">+ Ghi nhận xuất hàng</button>
-    <button class="btn" onclick="exportXhCSV()">⬇ CSV</button>
-    <button class="btn btn-blue" onclick="exportXhPDF()">📄 PDF</button>
+    <button class="btn" onclick="exportXhCSV()">⬇ CSV (ngày này)</button>
+    <button class="btn btn-blue" onclick="exportXhPDF()">📄 PDF (ngày này)</button>
+  </div>
+  <div class="toolbar" style="margin-bottom:10px">
+    <label style="font-size:12px;font-weight:700;color:#555">📅 Xuất theo khoảng ngày — Từ:</label>
+    <input type="date" id="xh-range-from" style="padding:5px 8px;border:1px solid #ccc;border-radius:6px;font-size:12px">
+    <label style="font-size:12px;font-weight:700;color:#555">đến:</label>
+    <input type="date" id="xh-range-to" style="padding:5px 8px;border:1px solid #ccc;border-radius:6px;font-size:12px">
+    <button class="btn" onclick="setXhRangePreset('7ngay')">7 ngày qua</button>
+    <button class="btn" onclick="setXhRangePreset('30ngay')">30 ngày qua</button>
+    <button class="btn" onclick="setXhRangePreset('thang')">Tháng này</button>
+    <button class="btn" onclick="setXhRangePreset('thangtruoc')">Tháng trước</button>
+    <button class="btn btn-red" onclick="exportXhRangeCSV()">⬇ Xuất CSV cả khoảng</button>
+    <button class="btn btn-blue" onclick="exportXhRangePDF()">📄 Xuất PDF cả khoảng</button>
   </div>
   <div class="info-box">ℹ Nhập số lượng thành phẩm xuất đi (giao khách, chuyển kho...) trong ngày. Hệ thống sẽ tự động trừ vào <b>tồn thành phẩm tại line</b>, cho biết còn lại bao nhiêu thành phẩm chưa xuất.</div>
   <div class="tbl-wrap">
@@ -1634,6 +1646,14 @@ const ADMIN_EMAIL='admin@haitan2.local';
 let isAdmin=false, idToken=null, refreshToken=null, tokenExpiry=0, refreshTimer=null;
 
 function requireAdmin(){
+  // Chặn TẤT CẢ thao tác ghi (hàm này được gọi ở đầu mọi hành động lưu/xóa) cho
+  // tới khi đã đồng bộ xong dữ liệu ban đầu với cloud (baselineState sẵn sàng).
+  // Đóng khe hở: nếu bấm Lưu đúng lúc trang vừa mở (trước khi kịp đồng bộ), dữ
+  // liệu cục bộ lúc đó có thể còn cũ/mặc định — đợi vài giây cho chắc ăn.
+  if(!baselineState){
+    toast('⏳ Đang đồng bộ dữ liệu ban đầu, vui lòng đợi vài giây rồi thử lại thao tác này.',true);
+    return false;
+  }
   if(isAdmin)return true;
   showLoginGate();
   return false;
@@ -1878,10 +1898,29 @@ function taiTrangThaiMoiNhat(){
 }
 
 function pushCloud(){
-  if(!cloudReady){pendingPush=true;return;} // chưa nhận dữ liệu thật từ cloud → CHƯA đẩy gì lên, tránh ghi đè dữ liệu đúng bằng dữ liệu rỗng/mặc định
+  // Chặn ghi cho tới khi ĐÃ CÓ baselineState thật (không chỉ cloudReady) — đóng
+  // đúng khe hở gây mất dữ liệu: cloudReady bật ngay khi nhận được sự kiện real-time
+  // đầu tiên, nhưng applyCloudState (nơi thiết lập baselineState) chỉ chạy sau đó
+  // ~250ms (có debounce). Nếu người dùng lưu thao tác đúng trong khe hở này, trước
+  // đây sẽ ghi đè cloud bằng dữ liệu cục bộ CHƯA kịp đồng bộ (có thể là dữ liệu cũ/
+  // mặc định) — nay phải đợi đến khi có baselineState mới cho phép ghi.
+  if(!cloudReady||!baselineState){pendingPush=true;return;}
   dangGhiCucBo=true;
   clearTimeout(pushCloudTimer);
   pushCloudTimer=setTimeout(()=>{thucHienGhiCoGop(0);},500);
+}
+
+// Lưới an toàn cuối cùng: nếu vì bất kỳ lý do gì (bug khác, dữ liệu cục bộ bị lỗi...)
+// mà kết quả chuẩn bị ghi lên có SỐ LƯỢNG mặt hàng/thành phẩm giảm đột ngột và bất
+// thường so với dữ liệu THẬT đang có trên cloud, coi đây là dấu hiệu nguy hiểm và
+// TỪ CHỐI ghi — thà bỏ lỡ 1 lượt lưu còn hơn xóa sạch dữ liệu thật của cả nhà máy.
+function laGhiNguyHiem(ketQua,fresh){
+  if(!fresh)return false;
+  const soFreshItems=(fresh.items||[]).length,soKetQuaItems=(ketQua.items||[]).length;
+  const soFreshSP=(fresh.products||[]).length,soKetQuaSP=(ketQua.products||[]).length;
+  if(soFreshItems>=5&&soKetQuaItems<soFreshItems*0.5)return true;
+  if(soFreshSP>=1&&soKetQuaSP===0)return true;
+  return false;
 }
 
 // Đọc mới nhất (kèm ETag) → nếu cloud đã đổi khác so với mốc mình biết cuối
@@ -1899,6 +1938,12 @@ function thucHienGhiCoGop(lanThu){
       ketQua=live;
     }
     ketQua._ts=Date.now();
+    if(laGhiNguyHiem(ketQua,fresh)){
+      dangGhiCucBo=false;
+      applyCloudState(fresh); // khôi phục đúng dữ liệu thật hiện có, KHÔNG ghi gì lên cả
+      toast('⚠ Phát hiện lượt ghi có nguy cơ làm THIẾU dữ liệu bất thường so với dữ liệu thật trên cloud — đã HỦY để bảo vệ dữ liệu, và khôi phục lại đúng số liệu hiện có. Vui lòng tải lại trang (F5) rồi thực hiện lại thao tác.',true);
+      return;
+    }
     const url=FIREBASE_URL+CLOUD_PATH+(idToken?('?auth='+idToken):'');
     const headers={'Content-Type':'application/json'};
     if(etag)headers['if-match']=etag;
@@ -2008,7 +2053,10 @@ function handleCloudEvent(ev){
   const data=payload.data;
   cloudReady=true; // đã nhận được bản dữ liệu thật (dù rỗng hay có dữ liệu) từ cloud — từ giờ mới cho phép đẩy dữ liệu lên
   if(!data){
-    // Database đang trống thật sự (lần đầu thiết lập) → đẩy dữ liệu hiện có của máy này lên làm dữ liệu gốc
+    // Database đang trống thật sự (lần đầu thiết lập) → đẩy dữ liệu hiện có của máy này lên làm dữ liệu gốc.
+    // Thiết lập mốc gốc rỗng trước, để cho phép lượt ghi đầu tiên này đi qua (guard mới yêu cầu phải có
+    // baselineState mới cho ghi — trường hợp này chưa từng có gì để so sánh nên gốc rỗng là hợp lý).
+    if(!baselineState)baselineState={_ts:0};
     setCloudStatus('ok');
     pendingPush=false;
     pushCloud();
@@ -2173,7 +2221,7 @@ function switchTab(id){
   if(id==='sx'){document.getElementById('disp-date-sx').textContent=fDate(curDateSx);renderDaySx();}
   if(id==='dt'){document.getElementById('disp-month-dt').textContent=fMonthLabel(curMonthDt);renderDoanhThu();}
   if(id==='dh')renderOrders();
-  if(id==='xh'){document.getElementById('disp-date-xh').textContent=fDate(curDateXh);renderDayXh();}
+  if(id==='xh'){document.getElementById('disp-date-xh').textContent=fDate(curDateXh);renderDayXh();if(!document.getElementById('xh-range-from').value)initXhRange();}
   if(id==='nktp'){document.getElementById('disp-date-nktp').textContent=fDate(curDateNktp);renderDayNktp();}
   if(id==='tv')renderTV();
   if(id==='kh'){document.getElementById('kh-date').value=curPlanDate;renderKhRows();renderKhShortage();if(khViewMode!=='ngay')renderKhMatrix();}
@@ -3674,6 +3722,43 @@ function delXh(id){if(!requireAdmin())return;
   toast('Đã xóa lượt xuất hàng và hoàn tồn thành phẩm');
 }
 function exportXhCSV(){const ds=fISO(curDateXh),r=[['Giờ','Mã TP','Tên thành phẩm','ĐVT','SL xuất','Xuất từ xưởng','Xuất đến','Người TH','Tồn TP còn lại','Ghi chú']];shipLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>r.push([l.time,l.ma,l.ten,l.dvt,l.sl,LOC_LABELS[l.xuong]||'Xưởng 1',l.to||'',l.nguoi||'',l.ton_sau,l.note||'']));dlCSV(r,'xuathang-'+ds+'.csv');toast('Đã xuất CSV');}
+function initXhRange(){
+  const today=new Date();
+  const first=new Date(today.getFullYear(),today.getMonth(),1);
+  document.getElementById('xh-range-from').value=fISOLocal(first);
+  document.getElementById('xh-range-to').value=fISOLocal(today);
+}
+function setXhRangePreset(p){
+  const today=new Date();
+  let f,t=new Date(today);
+  if(p==='thang'){f=new Date(today.getFullYear(),today.getMonth(),1);}
+  else if(p==='thangtruoc'){f=new Date(today.getFullYear(),today.getMonth()-1,1);t=new Date(today.getFullYear(),today.getMonth(),0);}
+  else if(p==='7ngay'){f=new Date(today);f.setDate(f.getDate()-6);}
+  else if(p==='30ngay'){f=new Date(today);f.setDate(f.getDate()-29);}
+  else{f=new Date(today.getFullYear(),today.getMonth(),1);}
+  document.getElementById('xh-range-from').value=fISOLocal(f);
+  document.getElementById('xh-range-to').value=fISOLocal(t);
+}
+function layXhTheoKhoang(){
+  const from=document.getElementById('xh-range-from').value,to=document.getElementById('xh-range-to').value;
+  if(!from||!to){toast('Vui lòng chọn đủ khoảng ngày!',true);return null;}
+  if(from>to){toast('Ngày bắt đầu phải trước ngày kết thúc!',true);return null;}
+  return {from,to,rows:shipLog.filter(l=>l.date&&l.date>=from&&l.date<=to).sort((a,b)=>a.date!==b.date?a.date.localeCompare(b.date):a.time.localeCompare(b.time))};
+}
+function exportXhRangeCSV(){
+  const kq=layXhTheoKhoang();if(!kq)return;
+  if(!kq.rows.length){toast('Không có lượt xuất hàng nào trong khoảng ngày đã chọn!',true);return;}
+  const r=[['Ngày','Giờ','Mã TP','Tên thành phẩm','ĐVT','SL xuất','Xuất từ xưởng','Xuất đến','Người TH','Tồn TP còn lại','Ghi chú']];
+  kq.rows.forEach(l=>r.push([l.date,l.time,l.ma,l.ten,l.dvt,l.sl,LOC_LABELS[l.xuong]||'Xưởng 1',l.to||'',l.nguoi||'',l.ton_sau,l.note||'']));
+  dlCSV(r,'xuathang-'+kq.from+'_'+kq.to+'.csv');
+  toast('Đã xuất CSV — '+kq.rows.length+' lượt ghi nhận từ '+kq.from+' đến '+kq.to);
+}
+function exportXhRangePDF(){
+  const kq=layXhTheoKhoang();if(!kq)return;
+  if(!kq.rows.length){toast('Không có lượt xuất hàng nào trong khoảng ngày đã chọn!',true);return;}
+  const rows=kq.rows.map((l,i)=>'<tr><td>'+(i+1)+'</td><td>'+l.date+'</td><td>'+l.time+'</td><td style="font-size:9px">'+l.ma+'</td><td>'+l.ten+'</td><td>−'+fN(l.sl)+' '+l.dvt+'</td><td>'+(LOC_LABELS[l.xuong]||'Xưởng 1')+'</td><td>'+(l.to||'—')+'</td><td>'+(l.nguoi||'—')+'</td><td>'+fN(l.ton_sau)+'</td><td>'+(l.note||'')+'</td></tr>').join('');
+  openPDF(buildPDF('NHẬT KÝ XUẤT HÀNG THÀNH PHẨM — XƯỞNG HẢI TÂN 2','Từ '+kq.from+' đến '+kq.to+' | Tổng: '+kq.rows.length+' lượt','<table><thead><tr><th>STT</th><th>Ngày</th><th>Giờ</th><th>Mã TP</th><th>Tên</th><th>SL xuất</th><th>Xưởng xuất</th><th>Xuất đến</th><th>Người TH</th><th>Tồn còn lại</th><th>Ghi chú</th></tr></thead><tbody>'+rows+'</tbody></table>'));
+}
 function exportXhPDF(){const ds=fISO(curDateXh);const rows=shipLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).map((l,i)=>'<tr><td>'+(i+1)+'</td><td>'+l.time+'</td><td style="font-size:9px">'+l.ma+'</td><td>'+l.ten+'</td><td>−'+fN(l.sl)+' '+l.dvt+'</td><td>'+(LOC_LABELS[l.xuong]||'Xưởng 1')+'</td><td>'+(l.to||'—')+'</td><td>'+(l.nguoi||'—')+'</td><td>'+fN(l.ton_sau)+'</td><td>'+(l.note||'')+'</td></tr>').join('');openPDF(buildPDF('NHẬT KÝ XUẤT HÀNG THÀNH PHẨM — XƯỞNG HẢI TÂN 2','Ngày: '+ds,'<table><thead><tr><th>STT</th><th>Giờ</th><th>Mã TP</th><th>Tên</th><th>SL xuất</th><th>Xưởng xuất</th><th>Xuất đến</th><th>Người TH</th><th>Tồn còn lại</th><th>Ghi chú</th></tr></thead><tbody>'+rows+'</tbody></table>'));}
 
 // ── CHUYỂN KHO THÀNH PHẨM (giữa Xưởng 1 ↔ Xưởng 2 — không đụng tồn linh kiện) ──
