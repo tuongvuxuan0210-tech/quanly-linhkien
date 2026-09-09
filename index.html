@@ -157,7 +157,11 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
     <h2>Quản Lý Linh Kiện Xe Cứu Hỏa</h2>
     <div class="lg-sub">Xưởng Hải Tân 2<br>Vui lòng đăng nhập để tiếp tục</div>
     <div class="lg-field">
-      <label>Mật khẩu Admin</label>
+      <label>Tên đăng nhập (bỏ trống nếu là Admin)</label>
+      <input id="lg-user" type="text" autocomplete="off" placeholder="VD: nguyenvana (để trống = đăng nhập Admin)" oninput="document.getElementById('lg-pass-label').textContent=this.value.trim()?'Mật khẩu tài khoản':'Mật khẩu Admin'" onkeydown="if(event.key==='Enter')document.getElementById('lg-pass').focus()">
+    </div>
+    <div class="lg-field">
+      <label id="lg-pass-label">Mật khẩu Admin</label>
       <input id="lg-pass" type="password" placeholder="Nhập mật khẩu..." onkeydown="if(event.key==='Enter')submitGateLogin()">
     </div>
     <button class="lg-btn" id="lg-btn" onclick="submitGateLogin()">Đăng nhập</button>
@@ -583,6 +587,37 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   </div>
 </div>
 
+<!-- MODAL QUẢN LÝ TÀI KHOẢN XƯỞNG -->
+<div class="modal-overlay" id="modal-xuong-acc">
+  <div class="modal-box" style="max-width:640px">
+    <h3>Quản lý tài khoản xưởng <button onclick="closeModal(&#39;modal-xuong-acc&#39;)">✕</button></h3>
+    <div class="info-box">ℹ Các tài khoản này để nhân sự Xưởng 1/2 tự đăng nhập (không cần dùng chung mật khẩu Admin). Danh sách <b>chỉ lưu trên trình duyệt của máy này</b>, không đồng bộ qua máy khác — nếu Xưởng dùng thêm máy nào khác, tạo lại tài khoản tương tự trên máy đó.</div>
+    <div class="tbl-wrap" style="margin-bottom:16px">
+      <table><thead><tr><th class="tl">Tên đăng nhập</th><th class="tl">Họ tên</th><th>Xưởng</th><th style="width:130px"></th></tr></thead>
+      <tbody id="xacc-body"></tbody></table>
+    </div>
+    <div style="font-weight:700;font-size:12px;color:#333;margin-bottom:8px">+ Thêm tài khoản mới</div>
+    <div class="frow">
+      <div class="ff"><label>Tên đăng nhập <span style="color:#c0392b">*</span></label><input id="xacc-user" placeholder="VD: nguyenvana" autocomplete="off"></div>
+      <div class="ff"><label>Họ tên</label><input id="xacc-hoten" placeholder="Tên hiển thị..." autocomplete="off"></div>
+    </div>
+    <div class="frow">
+      <div class="ff"><label>Xưởng <span style="color:#c0392b">*</span></label>
+        <select id="xacc-xuong"><option value="x1">Xưởng 1</option><option value="x2">Xưởng 2</option></select>
+      </div>
+      <div class="ff"></div>
+    </div>
+    <div class="frow">
+      <div class="ff"><label>Mật khẩu <span style="color:#c0392b">*</span></label><input id="xacc-pass" type="password" placeholder="Tối thiểu 4 ký tự" autocomplete="new-password"></div>
+      <div class="ff"><label>Nhập lại mật khẩu <span style="color:#c0392b">*</span></label><input id="xacc-pass2" type="password" placeholder="Gõ lại mật khẩu..." autocomplete="new-password" onkeydown="if(event.key==='Enter')addXuongAccount()"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal(&#39;modal-xuong-acc&#39;)">Đóng</button>
+      <button class="btn btn-green" onclick="addXuongAccount()">✓ Thêm tài khoản</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOPBAR -->
 <div class="topbar">
   <span style="font-size:18px">🚒</span>
@@ -595,6 +630,7 @@ tr.gd-xuat td:first-child{border-left:3px solid #b7770d}
   <span class="tb-btn" onclick="exportBackup()" title="Lưu toàn bộ dữ liệu ra 1 file để chuyển sang máy khác">💾 Xuất dữ liệu</span>
   <span class="tb-btn" onclick="document.getElementById(&#39;backup-file-input&#39;).click()" title="Nạp file dữ liệu đã xuất từ máy khác">📥 Nhập dữ liệu</span>
   <input type="file" id="backup-file-input" accept="application/json,.json" style="display:none" onchange="importBackup(this.files[0])">
+  <span class="tb-btn" id="hd-xuong-manage" onclick="openXuongAccountsModal()" title="Quản lý tài khoản đăng nhập theo xưởng" style="display:none">👥 Tài khoản xưởng</span>
   <span class="tb-btn" id="hd-admin" title="Trạng thái đăng nhập">🔒 Chưa đăng nhập</span>
 </div>
 
@@ -1645,6 +1681,123 @@ const FIREBASE_API_KEY='AIzaSyC61kV9FesX4P-ZSqY4Kgm12Y5ZpbvyyaM';
 const ADMIN_EMAIL='admin@haitan2.local';
 let isAdmin=false, idToken=null, refreshToken=null, tokenExpiry=0, refreshTimer=null;
 
+// ── TÀI KHOẢN THEO XƯỞNG (chỉ lưu LOCAL trên từng máy/trình duyệt, không đồng bộ
+// qua Firebase) ───────────────────────────────────────────────────────────────
+// Khác với tài khoản Admin dùng chung ở trên (xác thực thật qua Firebase Auth,
+// dùng được từ bất kỳ máy nào), các tài khoản Xưởng 1/Xưởng 2 bên dưới chỉ là
+// 1 danh sách lưu trong localStorage của TRÌNH DUYỆT đang mở - không tự đồng bộ
+// sang máy khác. Lý do: toàn bộ dữ liệu app (Firebase Realtime Database) vốn đã
+// KHÔNG có luật bảo mật phía server (đọc/ghi không cần xác thực - xem pushCloud
+// bên dưới, tham số ?auth= chỉ được gắn thêm KHI CÓ idToken chứ không bắt buộc)
+// - nghĩa là toàn bộ "phân quyền" trong app này, kể cả cái mới thêm này, chỉ là
+// một lớp CHE ở GIAO DIỆN cho người dùng nội bộ đáng tin cậy, không phải hàng
+// rào bảo mật thật chống truy cập trái phép. Vì vậy KHÔNG cần một hệ thống tài
+// khoản đồng bộ phức tạp qua Firebase - lưu local là đủ và an toàn hơn khi sửa
+// (không đụng vào cơ chế gộp 3 chiều rebase dữ liệu vốn đã khá phức tạp).
+// Nếu Xưởng 2 dùng nhiều máy khác nhau, Admin cần tạo lại tài khoản tương tự
+// trên từng máy đó (xem modal "Quản lý tài khoản xưởng").
+const XUONG_ACCOUNTS_KEY='qlk_xuong_accounts_v1';
+const XUONG_SESSION_KEY=SK+'xuongUser';
+let myXuong=null; // null = Admin (toan quyen); 'x1'/'x2' = chi Xuong 1/2
+let myUser=null;  // {username,hoten,xuong} cua tai khoan xuong dang dang nhap (null neu la Admin)
+
+async function shaHex(text){
+  const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function loadXuongAccounts(){
+  try{return JSON.parse(localStorage.getItem(XUONG_ACCOUNTS_KEY)||'[]');}catch(e){return [];}
+}
+function saveXuongAccounts(list){
+  try{localStorage.setItem(XUONG_ACCOUNTS_KEY, JSON.stringify(list));}catch(e){}
+}
+function normXuongUser(u){return (u||'').trim().toLowerCase();}
+async function timTaiKhoanXuong(username, password){
+  const uname=normXuongUser(username);
+  const list=loadXuongAccounts();
+  const acc=list.find(a=>a.username===uname);
+  if(!acc)return null;
+  const hash=await shaHex(password);
+  return hash===acc.passHash ? acc : null;
+}
+
+// ── Modal "Quản lý tài khoản xưởng" (chỉ Admin thao tác được) ───────────────
+function openXuongAccountsModal(){if(!requireAdmin())return;
+  if(!isAdmin){toast('Chỉ Admin mới được quản lý tài khoản xưởng!',true);return;}
+  document.getElementById('xacc-user').value='';
+  document.getElementById('xacc-hoten').value='';
+  document.getElementById('xacc-xuong').value='x1';
+  document.getElementById('xacc-pass').value='';
+  document.getElementById('xacc-pass2').value='';
+  renderXuongAccountsModal();
+  openModal('modal-xuong-acc');
+}
+function renderXuongAccountsModal(){
+  const list=loadXuongAccounts();
+  const body=document.getElementById('xacc-body');
+  if(!list.length){
+    body.innerHTML='<tr><td colspan="4" style="text-align:center;color:#999;padding:10px;font-size:11px">Chưa có tài khoản xưởng nào.</td></tr>';
+    return;
+  }
+  const tenXuong=x=>x==='x1'?'Xưởng 1':(x==='x2'?'Xưởng 2':x);
+  body.innerHTML=list.slice().sort((a,b)=>a.username.localeCompare(b.username)).map(a=>'<tr>'
+    +'<td style="font-weight:600">'+a.username+'</td>'
+    +'<td>'+(a.hoten||'<span style="color:#ccc">—</span>')+'</td>'
+    +'<td class="tc"><span class="sb sb-blue">'+tenXuong(a.xuong)+'</span></td>'
+    +'<td class="tc">'
+      +'<button onclick="resetXuongPassword(\''+a.username+'\')" style="background:none;border:none;cursor:pointer;color:#555;font-size:13px" title="Đổi mật khẩu">🔑</button> '
+      +'<button onclick="delXuongAccount(\''+a.username+'\')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:13px" title="Xóa tài khoản">🗑</button>'
+    +'</td>'
+    +'</tr>').join('');
+}
+async function addXuongAccount(){if(!requireAdmin())return;
+  if(!isAdmin){toast('Chỉ Admin mới được quản lý tài khoản xưởng!',true);return;}
+  const username=normXuongUser(document.getElementById('xacc-user').value);
+  const hoten=document.getElementById('xacc-hoten').value.trim();
+  const xuong=document.getElementById('xacc-xuong').value;
+  const pass=document.getElementById('xacc-pass').value;
+  const pass2=document.getElementById('xacc-pass2').value;
+  if(!username){toast('Vui lòng nhập tên đăng nhập!',true);return;}
+  if(!/^[a-z0-9._-]+$/.test(username)){toast('Tên đăng nhập chỉ nên gồm chữ (không dấu), số, dấu chấm/gạch dưới/gạch ngang!',true);return;}
+  if(!pass||pass.length<4){toast('Mật khẩu cần ít nhất 4 ký tự!',true);return;}
+  if(pass!==pass2){toast('Nhập lại mật khẩu không khớp!',true);return;}
+  const list=loadXuongAccounts();
+  if(list.some(a=>a.username===username)){toast('Tên đăng nhập này đã tồn tại!',true);return;}
+  const passHash=await shaHex(pass);
+  list.push({username,hoten,xuong,passHash});
+  saveXuongAccounts(list);
+  renderXuongAccountsModal();
+  document.getElementById('xacc-user').value='';
+  document.getElementById('xacc-hoten').value='';
+  document.getElementById('xacc-pass').value='';
+  document.getElementById('xacc-pass2').value='';
+  toast('✓ Đã thêm tài khoản xưởng: '+username);
+}
+function delXuongAccount(username){if(!requireAdmin())return;
+  if(!isAdmin){toast('Chỉ Admin mới được quản lý tài khoản xưởng!',true);return;}
+  if(!confirm('Xóa tài khoản đăng nhập "'+username+'"?\n(Chỉ xóa trên trình duyệt/máy này.)'))return;
+  let list=loadXuongAccounts();
+  list=list.filter(a=>a.username!==username);
+  saveXuongAccounts(list);
+  // Nếu tài khoản đang bị xóa chính là phiên đang đăng nhập trên máy này thì
+  // đăng xuất luôn cho an toàn.
+  if(myUser&&myUser.username===username)logoutXuong();
+  renderXuongAccountsModal();
+  toast('Đã xóa tài khoản: '+username);
+}
+async function resetXuongPassword(username){if(!requireAdmin())return;
+  if(!isAdmin){toast('Chỉ Admin mới được quản lý tài khoản xưởng!',true);return;}
+  const pass=prompt('Nhập mật khẩu MỚI cho tài khoản "'+username+'" (tối thiểu 4 ký tự):');
+  if(pass===null)return;
+  if(!pass||pass.length<4){toast('Mật khẩu cần ít nhất 4 ký tự!',true);return;}
+  const list=loadXuongAccounts();
+  const acc=list.find(a=>a.username===username);
+  if(!acc){toast('Không tìm thấy tài khoản này!',true);return;}
+  acc.passHash=await shaHex(pass);
+  saveXuongAccounts(list);
+  toast('✓ Đã đổi mật khẩu cho: '+username);
+}
+
 function requireAdmin(){
   // Chặn TẤT CẢ thao tác ghi (hàm này được gọi ở đầu mọi hành động lưu/xóa) cho
   // tới khi đã đồng bộ xong dữ liệu ban đầu với cloud (baselineState sẵn sàng).
@@ -1654,7 +1807,12 @@ function requireAdmin(){
     toast('⏳ Đang đồng bộ dữ liệu ban đầu, vui lòng đợi vài giây rồi thử lại thao tác này.',true);
     return false;
   }
-  if(isAdmin)return true;
+  // Admin (tài khoản Firebase dùng chung) HOẶC tài khoản theo xưởng (đăng nhập
+  // local, xem ở trên) đều được coi là "đã đăng nhập" và được phép thao tác ghi.
+  // Hiện chưa giới hạn tài khoản xưởng chỉ được sửa đúng xưởng của mình — đó là
+  // việc của bước tiếp theo (modal quản lý tài khoản + phân quyền theo xuong),
+  // còn ở đây chỉ lo phần đăng nhập/đăng xuất chạy đúng song song với Admin.
+  if(isAdmin || myUser)return true;
   showLoginGate();
   return false;
 }
@@ -1662,7 +1820,10 @@ function showLoginGate(){
   const gate=document.getElementById('login-gate');
   if(gate)gate.style.display='flex';
   const err=document.getElementById('lg-err');if(err)err.textContent='';
-  const pass=document.getElementById('lg-pass');if(pass){pass.value='';setTimeout(()=>pass.focus(),150);}
+  const userEl=document.getElementById('lg-user');if(userEl)userEl.value='';
+  const passLabel=document.getElementById('lg-pass-label');if(passLabel)passLabel.textContent='Mật khẩu Admin';
+  const pass=document.getElementById('lg-pass');
+  if(pass){pass.value='';setTimeout(()=>{if(userEl)userEl.focus();else pass.focus();},150);}
 }
 function hideLoginGate(){
   const gate=document.getElementById('login-gate');
@@ -1670,8 +1831,22 @@ function hideLoginGate(){
 }
 function applyAuthSuccess(idTok,refTok,expiresInSec){
   idToken=idTok;refreshToken=refTok;tokenExpiry=Date.now()+parseInt(expiresInSec)*1000;isAdmin=true;
+  myXuong=null;myUser=null; // đảm bảo không lẫn với phiên tài khoản xưởng trước đó
+  try{sessionStorage.removeItem(XUONG_SESSION_KEY);}catch(e){}
   try{sessionStorage.setItem(SK+'reftok',refreshToken);}catch(e){}
   scheduleTokenRefresh();
+  updateAdminUI();
+  hideLoginGate();
+}
+function applyXuongLoginSuccess(acc){
+  // Đăng nhập tài khoản xưởng: KHÔNG qua Firebase Auth, chỉ xác nhận local (so
+  // khớp với danh sách trong localStorage - xem timTaiKhoanXuong ở trên).
+  isAdmin=false;idToken=null;refreshToken=null;tokenExpiry=0;
+  clearTimeout(refreshTimer);
+  try{sessionStorage.removeItem(SK+'reftok');}catch(e){}
+  myXuong=acc.xuong;
+  myUser={username:acc.username,hoten:acc.hoten||acc.username,xuong:acc.xuong};
+  try{sessionStorage.setItem(XUONG_SESSION_KEY,JSON.stringify(myUser));}catch(e){}
   updateAdminUI();
   hideLoginGate();
 }
@@ -1693,18 +1868,49 @@ async function refreshIdToken(silent){
   }catch(e){setTimeout(()=>refreshIdToken(silent),15000);}
 }
 function tryAutoLogin(){
+  // Ưu tiên khôi phục phiên Admin (nếu có refresh token còn trong sessionStorage
+  // của tab này); nếu không thì thử khôi phục phiên tài khoản xưởng; cuối cùng
+  // mới hiện màn hình đăng nhập.
   let saved=null;
   try{saved=sessionStorage.getItem(SK+'reftok');}catch(e){}
-  if(saved){refreshToken=saved;refreshIdToken(true);}
-  else showLoginGate();
+  if(saved){refreshToken=saved;refreshIdToken(true);return;}
+  let savedUser=null;
+  try{savedUser=sessionStorage.getItem(XUONG_SESSION_KEY);}catch(e){}
+  if(savedUser){
+    try{
+      const u=JSON.parse(savedUser);
+      if(u&&u.username&&u.xuong){
+        myUser=u;myXuong=u.xuong;
+        updateAdminUI();
+        return;
+      }
+    }catch(e){}
+  }
+  showLoginGate();
 }
 async function submitGateLogin(){
+  const userEl=document.getElementById('lg-user');
+  const username=(userEl?userEl.value:'').trim();
   const pass=document.getElementById('lg-pass').value;
   const err=document.getElementById('lg-err');
   const btn=document.getElementById('lg-btn');
   err.textContent='';
   if(!pass){err.textContent='Vui lòng nhập mật khẩu!';return;}
   btn.disabled=true;btn.textContent='Đang đăng nhập...';
+  // Có nhập tên đăng nhập => đây là tài khoản theo xưởng, kiểm tra local, KHÔNG
+  // gọi Firebase Auth (tài khoản xưởng không tồn tại bên Firebase).
+  if(username){
+    try{
+      const acc=await timTaiKhoanXuong(username,pass);
+      if(!acc){err.textContent='❌ Sai tên đăng nhập hoặc mật khẩu!';btn.disabled=false;btn.textContent='Đăng nhập';return;}
+      applyXuongLoginSuccess(acc);
+      toast('🔓 Đăng nhập thành công — '+(acc.hoten||acc.username));
+    }catch(e){
+      err.textContent='Có lỗi khi kiểm tra tài khoản, thử lại!';
+    }
+    btn.disabled=false;btn.textContent='Đăng nhập';
+    return;
+  }
   try{
     const res=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+FIREBASE_API_KEY,{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -1720,9 +1926,19 @@ async function submitGateLogin(){
   btn.disabled=false;btn.textContent='Đăng nhập';
 }
 function logoutAdmin(){
+  // Dùng chung cho cả Admin lẫn tài khoản xưởng (updateAdminUI gắn hàm này vào
+  // nút đăng xuất ở header cho cả 2 trường hợp) — tự nhận biết đang ở phiên nào.
+  if(myUser){logoutXuong();return;}
   isAdmin=false;idToken=null;refreshToken=null;tokenExpiry=0;
   clearTimeout(refreshTimer);
   try{sessionStorage.removeItem(SK+'reftok');}catch(e){}
+  updateAdminUI();
+  toast('🔒 Đã đăng xuất');
+  showLoginGate();
+}
+function logoutXuong(){
+  myXuong=null;myUser=null;
+  try{sessionStorage.removeItem(XUONG_SESSION_KEY);}catch(e){}
   updateAdminUI();
   toast('🔒 Đã đăng xuất');
   showLoginGate();
@@ -1731,7 +1947,16 @@ function updateAdminUI(){
   const el=document.getElementById('hd-admin');
   if(!el)return;
   if(isAdmin){el.textContent='🔓 Đã đăng nhập (Đăng xuất)';el.onclick=logoutAdmin;el.style.cursor='pointer';el.style.background='rgba(46,204,113,.35)';}
+  else if(myUser){
+    const tenXuong=myUser.xuong==='x1'?'Xưởng 1':(myUser.xuong==='x2'?'Xưởng 2':myUser.xuong);
+    el.textContent='🔓 '+(myUser.hoten||myUser.username)+' ('+tenXuong+') — Đăng xuất';
+    el.onclick=logoutAdmin;el.style.cursor='pointer';el.style.background='rgba(46,204,113,.35)';
+  }
   else{el.textContent='🔒 Chưa đăng nhập';el.onclick=showLoginGate;el.style.cursor='pointer';el.style.background='rgba(255,255,255,.15)';}
+  // Quản lý tài khoản xưởng: chỉ Admin mới thấy nút này (tài khoản xưởng không
+  // được tự tạo/xóa tài khoản khác).
+  const btnManage=document.getElementById('hd-xuong-manage');
+  if(btnManage)btnManage.style.display=isAdmin?'inline-flex':'none';
 }
 
 function persist(){sSet('items',JSON.stringify(items));sSet('gdlog',JSON.stringify(gdLog));sSet('rq',JSON.stringify(rqRows));sSet('rqc',rqCtr);sSet('products',JSON.stringify(products));sSet('prodlog',JSON.stringify(prodLog));sSet('shiplog',JSON.stringify(shipLog));sSet('alloclog',JSON.stringify(allocLog));sSet('defectcats',JSON.stringify(defectCats));sSet('plandata',JSON.stringify(planData));sSet('orders',JSON.stringify(orders));sSet('returnlog',JSON.stringify(returnLog));sSet('stafflog',JSON.stringify(staffLog));sSet('tptransferlog',JSON.stringify(tpTransferLog));sSet('congdoanlog',JSON.stringify(congDoanLog));if(!suppressCloudPush)pushCloud();}
