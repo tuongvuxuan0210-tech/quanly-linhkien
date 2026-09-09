@@ -2648,12 +2648,12 @@ function renderOverviewCharts(){
   if(!daysInRange.length){revEl.innerHTML=qtyEl.innerHTML=staffEl.innerHTML='<div style="padding:24px;text-align:center;color:#999">Chưa có dữ liệu.</div>';if(defectEl)defectEl.innerHTML='<div style="padding:24px;text-align:center;color:#999">Chưa có dữ liệu.</div>';return;}
   const labels=daysInRange.map(ds=>{const p=ds.split('-');return p[2]+'/'+p[1];});
   const actualRevenue=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>{
-    const p=products.find(x=>x.ma===l.ma);const gia=p?(p.gia||0):(l.gia||0);return s+l.sl*gia;
+    const p=products.find(x=>x.ma===l.ma);const gia=p?(p.gia||0):(l.gia||0);return s+laySlOkCuaLuot(l)*gia;
   },0));
   const planRevenue=daysInRange.map(ds=>(planData[ds]||[]).reduce((s,r)=>{
     const p=products.find(x=>x.ma===r.ma);return s+(r.sl||0)*(p?(p.gia||0):0);
   },0));
-  const actualQty=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>s+l.sl,0));
+  const actualQty=daysInRange.map(ds=>prodLog.filter(l=>l.date===ds).reduce((s,l)=>s+laySlOkCuaLuot(l),0));
   const planQty=daysInRange.map(ds=>{
     const rows=planData[ds]||[];
     if(!rows.length)return null; // ngày chưa nhập kế hoạch nào -> không có mục tiêu để hiện
@@ -2672,6 +2672,9 @@ function renderOverviewCharts(){
 }
 function layNgCuaLuot(r){
   return r.slNg!==undefined?r.slNg:Object.values(r.loi||{}).reduce((a,v)=>a+(parseFloat(v)||0),0);
+}
+function laySlOkCuaLuot(r){
+  return r.slOk!==undefined?r.slOk:Math.max(0,r.sl-layNgCuaLuot(r));
 }
 function buildDefectRateSVG(labels,rateArr){
   const W=Math.max(680,labels.length*46),H=280,padL=50,padR=16,padT=28,padB=56;
@@ -2829,7 +2832,7 @@ function updateSummary(){
       +'<td class="tr" style="font-weight:700;color:#185FA5">'+fN(r.tong)+'</td>'
       +'</tr>').join('') : '<tr><td colspan="6" style="text-align:center;padding:16px;color:#999">Chưa có tồn thành phẩm nào.</td></tr>';
   }
-  document.getElementById('s-tp-sx').textContent=fN(prodLog.filter(l=>l.date===td).reduce((s,l)=>s+l.sl,0));
+  document.getElementById('s-tp-sx').textContent=fN(prodLog.filter(l=>l.date===td).reduce((s,l)=>s+laySlOkCuaLuot(l),0));
   document.getElementById('s-tp-xh').textContent=fN(shipLog.filter(l=>l.date===td).reduce((s,l)=>s+l.sl,0));
   document.getElementById('s-tv-dangxuly').textContent=fN(returnLog.reduce((s,l)=>s+tvConLai(l),0));
   document.getElementById('s-tv-daxuattra').textContent=fN(returnLog.reduce((s,l)=>s+tvXuatTong(l),0));
@@ -3368,7 +3371,8 @@ function renderDoanhThu(){
     const p=products.find(x=>x.ma===l.ma);
     const gia=p?(p.gia||0):(l.gia||0);
     const congdoan=(p&&p.congdoan)?p.congdoan:'Chưa gán công đoạn';
-    return {...l,gia,congdoan,doanhthu:l.sl*gia};
+    const slOkRow=laySlOkCuaLuot(l);
+    return {...l,gia,congdoan,sl:slOkRow,doanhthu:slOkRow*gia};
   });
   const rowsXH=shipLog.filter(l=>l.date&&l.date.slice(0,7)===mk).map(l=>{
     const p=products.find(x=>x.ma===l.ma);
@@ -3426,7 +3430,8 @@ function exportDtCSV(){
   const rowsSX=prodLog.filter(l=>l.date&&l.date.slice(0,7)===mk).map(l=>{
     const p=products.find(x=>x.ma===l.ma);
     const gia=p?(p.gia||0):(l.gia||0);
-    return {...l,doanhthu:l.sl*gia};
+    const slOkRow=laySlOkCuaLuot(l);
+    return {...l,sl:slOkRow,doanhthu:slOkRow*gia};
   });
   const rowsXH=shipLog.filter(l=>l.date&&l.date.slice(0,7)===mk).map(l=>{
     const p=products.find(x=>x.ma===l.ma);
@@ -3545,6 +3550,12 @@ function saveSx(){if(!requireAdmin())return;
   if(!dateVal){toast('Vui lòng chọn ngày sản xuất!',true);return;}
   const ds=dateVal;
   const loi=readDefectInputs();
+  // Tách OK/NG: vật tư (linh kiện) đã dùng cho CẢ LÔ sản xuất (kể cả phần lỗi) nên vẫn
+  // trừ theo tổng "sl" — nhưng chỉ có hàng OK mới thực sự sẵn sàng để cộng vào tồn kho
+  // thành phẩm và tính doanh thu. Trước đây thiếu bước tách này khiến cả phần NG cũng
+  // bị cộng nhầm vào tồn kho như hàng OK.
+  const slNg=Object.values(loi).reduce((a,v)=>a+(parseFloat(v)||0),0);
+  const slOk=Math.max(0,sl-slNg);
   const consumedIds=[];
   bom.forEach(b=>{
     const it=items.find(x=>x.ma===b.ma);
@@ -3555,29 +3566,31 @@ function saveSx(){if(!requireAdmin())return;
     gdLog.push({id:gid,date:ds,time,ma:it.ma,ten:it.ten,dvt:it.dvt,type:'xuat',sl:need,loc,from:'Sản xuất — '+p.ma+' ('+p.ten+') tại '+LOC_LABELS[loc],nguoi,ton_sau:getTon(it,loc),note:'Tự động trừ theo định mức BOM sản xuất'});
     consumedIds.push(gid);
   });
-  addTonSP(p,loc,sl);
-  const gia=p.gia||0,doanhthu=sl*gia;
-  prodLog.push({id:genId(),date:ds,time,ma:p.ma,ten:p.ten,dvt:p.dvt,sl,xuong:loc,nguoi,note,ton_sau:getTonSP(p,loc),consumedIds,loi,gia,doanhthu,nsSang,nsChieu});
+  addTonSP(p,loc,slOk);
+  const gia=p.gia||0,doanhthu=slOk*gia;
+  prodLog.push({id:genId(),date:ds,time,ma:p.ma,ten:p.ten,dvt:p.dvt,sl,slOk,slNg,xuong:loc,nguoi,note,ton_sau:getTonSP(p,loc),consumedIds,loi,gia,doanhthu,nsSang,nsChieu});
   persist();
   closeModal('modal-sx');
   if(fISO(curDateSx)!==ds){curDateSx=new Date(ds+'T00:00:00');document.getElementById('disp-date-sx').textContent=fDate(curDateSx);}
   renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();renderOrders();updateSummary();
-  toast('🏭 Đã ghi nhận SX '+fN(sl)+' '+p.dvt+' — '+p.ten+' (đã tự trừ linh kiện tại '+LOC_LABELS[loc]+')'+(doanhthu?' | Doanh thu: '+fN(doanhthu)+'đ':''));
+  toast('🏭 Đã ghi nhận SX '+fN(sl)+' '+p.dvt+' — '+p.ten+' (OK: '+fN(slOk)+(slNg>0?', NG: '+fN(slNg):'')+' — linh kiện đã trừ theo tổng '+fN(sl)+', chỉ '+fN(slOk)+' hàng OK được cộng vào tồn kho tại '+LOC_LABELS[loc]+')'+(doanhthu?' | Doanh thu: '+fN(doanhthu)+'đ':''));
 }
 // ── NHÂN SỰ: đã chuyển sang nhập kèm theo từng lượt ghi nhận sản lượng (xem saveSx/msx-ns-sang/msx-ns-chieu) ──
 function renderDaySx(){
   const ds=fISO(curDateSx);
   const rows=prodLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time));
-  document.getElementById('sx-day-sum').textContent=fN(rows.reduce((s,r)=>s+r.sl,0));
+  document.getElementById('sx-day-sum').textContent=fN(rows.reduce((s,r)=>s+laySlOkCuaLuot(r),0));
   document.getElementById('sx-day-count').textContent=rows.length;
   document.getElementById('sx-count').textContent='Hiển thị '+rows.length+' lượt ghi nhận trong ngày '+ds;
   if(!rows.length){document.getElementById('sx-body').innerHTML='<tr><td colspan="13" style="text-align:center;padding:32px;color:#999"><div style="font-size:28px;margin-bottom:8px">🏭</div>Chưa có sản lượng nào được ghi nhận trong ngày này.<br><span style="font-size:11px">Bấm <b>+ Ghi nhận sản lượng</b> để nhập.</span></td></tr>';return;}
-  document.getElementById('sx-body').innerHTML=rows.map((r,i)=>'<tr>'
+  document.getElementById('sx-body').innerHTML=rows.map((r,i)=>{
+    const slOk=laySlOkCuaLuot(r),slNg=layNgCuaLuot(r);
+    return '<tr>'
     +'<td class="tc">'+(i+1)+'</td>'
     +'<td class="tc" style="font-weight:700">'+r.time+'</td>'
     +'<td><div class="ma-code">'+r.ma+'</div></td>'
     +'<td class="item-ten">'+r.ten+'</td>'
-    +'<td class="tr" style="font-weight:700;color:#185FA5;font-size:14px">+'+fN(r.sl)+'</td>'
+    +'<td class="tr" style="font-weight:700;color:#185FA5;font-size:14px">+'+fN(r.sl)+'<div style="font-size:10px;font-weight:600"><span style="color:#1e8449">OK: '+fN(slOk)+'</span>'+(slNg>0?' <span style="color:#c0392b">NG: '+fN(slNg)+'</span>':'')+'</div></td>'
     +'<td class="tc">'+r.dvt+'</td>'
     +'<td class="tc"><span style="background:#eef2f6;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600">'+(LOC_LABELS[r.xuong]||'Xưởng 1')+'</span> <button onclick="editSxXuong(\''+r.id+'\')" style="background:none;border:none;cursor:pointer;color:#185FA5;font-size:12px;padding:0 2px" title="Sửa xưởng">✏</button></td>'
     +'<td class="tc">'+(r.nguoi||'<span style="color:#ccc">—</span>')+'</td>'
@@ -3586,7 +3599,8 @@ function renderDaySx(){
     +'<td>'+defectSummary(r.loi)+'</td>'
     +'<td style="color:#888;font-size:11px">'+(r.note||'')+'</td>'
     +'<td class="tc"><button onclick="delSx(\''+r.id+'\')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px" title="Xóa">🗑</button></td>'
-    +'</tr>').join('');
+    +'</tr>';
+  }).join('');
 }
 function editSxXuong(id){
   if(!requireAdmin())return;
@@ -3607,11 +3621,13 @@ function editSxXuong(id){
     g.loc=newLoc;
     if(g.from)g.from=g.from.replace(LOC_LABELS[oldLoc],LOC_LABELS[newLoc]);
   });
-  // Hoàn tác tồn thành phẩm ở xưởng cũ, cộng đúng vào xưởng mới
+  // Hoàn tác tồn thành phẩm ở xưởng cũ, cộng đúng vào xưởng mới (chỉ đúng phần OK,
+  // vì tồn kho ban đầu cũng chỉ được cộng theo OK, không phải theo tổng sl)
   const p=products.find(x=>x.ma===r.ma);
+  const slOk=laySlOkCuaLuot(r);
   if(p){
-    addTonSP(p,oldLoc,-r.sl);
-    addTonSP(p,newLoc,r.sl);
+    addTonSP(p,oldLoc,-slOk);
+    addTonSP(p,newLoc,slOk);
     r.ton_sau=getTonSP(p,newLoc);
   }
   r.xuong=newLoc;
@@ -3629,9 +3645,10 @@ function defectSummaryText(loi){
 }
 function delSx(id){if(!requireAdmin())return;
   const r=prodLog.find(x=>x.id===id);if(!r)return;
-  if(!confirm('Xóa lượt sản xuất?\n'+r.ten+' — +'+fN(r.sl)+' '+r.dvt+'\n\nLinh kiện đã tiêu hao sẽ được hoàn lại và tồn thành phẩm sẽ trừ tương ứng.'))return;
+  const slOk=laySlOkCuaLuot(r);
+  if(!confirm('Xóa lượt sản xuất?\n'+r.ten+' — +'+fN(r.sl)+' '+r.dvt+' (OK: '+fN(slOk)+')\n\nLinh kiện đã tiêu hao sẽ được hoàn lại và tồn thành phẩm (phần OK) sẽ trừ tương ứng.'))return;
   const p=products.find(x=>x.ma===r.ma);
-  if(p)addTonSP(p,r.xuong||'x1',-r.sl);
+  if(p)addTonSP(p,r.xuong||'x1',-slOk);
   (r.consumedIds||[]).forEach(gid=>{
     const g=gdLog.find(x=>x.id===gid);
     if(g){const it=items.find(x=>x.ma===g.ma);if(it)addTon(it,g.loc||'x1',g.sl);}
@@ -3641,8 +3658,8 @@ function delSx(id){if(!requireAdmin())return;
   persist();renderDaySx();renderDayGd();renderTonKho();renderSP();renderDoanhThu();renderOrders();updateSummary();
   toast('Đã xóa lượt sản xuất và hoàn lại linh kiện');
 }
-function exportSxCSV(){const ds=fISO(curDateSx),r=[['Giờ','Mã TP','Tên thành phẩm','ĐVT','SL sản xuất','Xưởng SX','Người TH','Nhân sự sáng','Nhân sự chiều','Tồn TP sau','Lỗi phát sinh','Ghi chú']];prodLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>r.push([l.time,l.ma,l.ten,l.dvt,l.sl,LOC_LABELS[l.xuong]||'Xưởng 1',l.nguoi||'',l.nsSang||0,l.nsChieu||0,l.ton_sau,defectSummaryText(l.loi),l.note||'']));dlCSV(r,'sanluong-'+ds+'.csv');toast('Đã xuất CSV');}
-function exportSxPDF(){const ds=fISO(curDateSx);const rows=prodLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).map((l,i)=>'<tr><td>'+(i+1)+'</td><td>'+l.time+'</td><td style="font-size:9px">'+l.ma+'</td><td>'+l.ten+'</td><td>+'+fN(l.sl)+' '+l.dvt+'</td><td>'+(LOC_LABELS[l.xuong]||'Xưởng 1')+'</td><td>'+(l.nguoi||'—')+'</td><td>'+fN(l.nsSang||0)+' / '+fN(l.nsChieu||0)+'</td><td>'+fN(l.ton_sau)+'</td><td style="font-size:10px">'+(defectSummaryText(l.loi)||'—')+'</td><td>'+(l.note||'')+'</td></tr>').join('');openPDF(buildPDF('NHẬT KÝ SẢN LƯỢNG SẢN XUẤT — XƯỞNG HẢI TÂN 2','Ngày: '+ds,'<table><thead><tr><th>STT</th><th>Giờ</th><th>Mã TP</th><th>Tên</th><th>SL SX</th><th>Xưởng SX</th><th>Người TH</th><th>Nhân sự (S/C)</th><th>Tồn TP sau</th><th>Lỗi phát sinh</th><th>Ghi chú</th></tr></thead><tbody>'+rows+'</tbody></table>'));}
+function exportSxCSV(){const ds=fISO(curDateSx),r=[['Giờ','Mã TP','Tên thành phẩm','ĐVT','SL sản xuất (tổng)','SL OK','SL NG','Xưởng SX','Người TH','Nhân sự sáng','Nhân sự chiều','Tồn TP sau','Lỗi phát sinh','Ghi chú']];prodLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>r.push([l.time,l.ma,l.ten,l.dvt,l.sl,laySlOkCuaLuot(l),layNgCuaLuot(l),LOC_LABELS[l.xuong]||'Xưởng 1',l.nguoi||'',l.nsSang||0,l.nsChieu||0,l.ton_sau,defectSummaryText(l.loi),l.note||'']));dlCSV(r,'sanluong-'+ds+'.csv');toast('Đã xuất CSV');}
+function exportSxPDF(){const ds=fISO(curDateSx);const rows=prodLog.filter(l=>l.date===ds).sort((a,b)=>a.time.localeCompare(b.time)).map((l,i)=>'<tr><td>'+(i+1)+'</td><td>'+l.time+'</td><td style="font-size:9px">'+l.ma+'</td><td>'+l.ten+'</td><td>+'+fN(l.sl)+' '+l.dvt+'</td><td>'+fN(laySlOkCuaLuot(l))+'</td><td>'+fN(layNgCuaLuot(l))+'</td><td>'+(LOC_LABELS[l.xuong]||'Xưởng 1')+'</td><td>'+(l.nguoi||'—')+'</td><td>'+fN(l.nsSang||0)+' / '+fN(l.nsChieu||0)+'</td><td>'+fN(l.ton_sau)+'</td><td style="font-size:10px">'+(defectSummaryText(l.loi)||'—')+'</td><td>'+(l.note||'')+'</td></tr>').join('');openPDF(buildPDF('NHẬT KÝ SẢN LƯỢNG SẢN XUẤT — XƯỞNG HẢI TÂN 2','Ngày: '+ds,'<table><thead><tr><th>STT</th><th>Giờ</th><th>Mã TP</th><th>Tên</th><th>SL SX (tổng)</th><th>SL OK</th><th>SL NG</th><th>Xưởng SX</th><th>Người TH</th><th>Nhân sự (S/C)</th><th>Tồn TP sau</th><th>Lỗi phát sinh</th><th>Ghi chú</th></tr></thead><tbody>'+rows+'</tbody></table>'));}
 
 // ── XUẤT HÀNG THÀNH PHẨM (trừ tồn thành phẩm tại line) ───────────────────────
 function chDayXh(d){curDateXh=new Date(curDateXh);curDateXh.setDate(curDateXh.getDate()+d);document.getElementById('disp-date-xh').textContent=fDate(curDateXh);renderDayXh();}
